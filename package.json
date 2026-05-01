@@ -1,0 +1,20 @@
+{
+  "name": "vwwwv-blog",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Personal portfolio and blog at vwwwv.org. Vanilla web on Cloudflare Workers + D1, with an AI-driven publish workflow.",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run -w apps/site dev",
+    "deploy": "npm run -w apps/site deploy",
+    "typecheck": "npm run --workspaces --if-present typecheck",
+    "build": "npm run -w apps/site build"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

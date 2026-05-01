@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tag — vwwwv</title>
+<link rel="stylesheet" href="tokens.css?v=2">
+<style>
+/* page width unified via tokens.css */
+.masthead { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 24px 0 14px; border-top: 6px solid var(--ink); border-bottom: 2px solid var(--ink); position: relative; margin-top: 22px; }
+.masthead::before { content:""; position:absolute; left:0; right:0; top:-12px; border-top: 2px solid var(--ink); }
+.masthead__edition { position:absolute; top:-28px; right:0; font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); }
+.wordmark { display: block; height: 38px; width: auto; }
+.masthead__nav { display: flex; gap: 0; }
+.masthead__nav a { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: .14em; font-size: 14px; color: var(--ink); padding: 6px 18px; border-left: 2px solid var(--ink); line-height: 1; }
+.masthead__nav a:first-child { border-left: 0; padding-left: 0; }
+.masthead__nav a:last-child { padding-right: 0; }
+.masthead__nav a.is-active { color: var(--poster-red); }
+.masthead__nav a:hover { text-decoration: none; color: var(--poster-red); }
+
+.tag-hero { padding: 48px 0 24px; }
+.tag-hero h1 { font-size: clamp(48px, 7vw, 96px); }
+.tag-hero .lead { margin-top: 18px; max-width: 36em; color: var(--ink); }
+
+.tag-cloud { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0; border-top: 6px solid var(--ink); border-bottom: 2px solid var(--ink); position: relative; margin: 12px 0 32px; }
+.tag-cloud::after { content:""; position:absolute; left:0; right:0; bottom:-12px; border-top: 2px solid var(--ink); }
+.tag-card { padding: 22px 24px; border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink); display: flex; flex-direction: column; gap: 10px; min-height: 180px; cursor: pointer; }
+.tag-card:hover { background: var(--ink); color: var(--paper-cream); }
+.tag-card:hover .tag-card__name { color: var(--poster-red); }
+.tag-card:hover .tag-card__meta { color: var(--paper-cream); }
+.tag-card__count { font-family: var(--font-display); font-weight: 700; font-size: 56px; line-height: .9; color: var(--poster-red); }
+.tag-card__name { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; font-size: 24px; letter-spacing: .01em; color: var(--ink); }
+.tag-card__meta { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-soft); margin-top: auto; }
+
+.tag-list { display: grid; grid-template-columns: 100px 1fr 160px 100px; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--ink); align-items: baseline; }
+.tag-list:hover { background: var(--paper-cream-deep); }
+.tag-list__date { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
+.tag-list__title { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; font-size: 18px; color: var(--ink); }
+.tag-list__title a { color: inherit; }
+.tag-list__tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.tag-list__read { text-align: right; font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .08em; }
+.section-head { display: flex; justify-content: space-between; align-items: baseline; margin: 36px 0 12px; }
+.section-head h2 { font-size: 28px; }
+.section-head .meta { color: var(--poster-red); }
+@media (max-width: 720px) {
+  .tag-list { grid-template-columns: 1fr; gap: 4px; }
+  .tag-list__read { text-align: left; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="masthead">
+    <div class="masthead__edition">The Index · 47 Posts · 5 Tags</div>
+    <a class="masthead__brand" href="index.html" aria-label="vwwwv home" style="display:flex;align-items:center;text-decoration:none;">
+      <img class="wordmark" src="wordmark.svg" alt="vwwwv">
+    </a>
+    <nav class="masthead__nav">
+      <a href="index.html">Blog</a>
+      <a href="tag.html" class="is-active">Tag</a>
+      <a href="about.html">About</a>
+      <a href="system.html">System</a>
+    </nav>
+  </header>
+
+  <section class="tag-hero">
+    <div class="meta" style="color: var(--poster-red); margin-bottom: 14px;">The Index · 47 Posts · 5 Tags</div>
+    <h1>Everything, filed.</h1>
+    <p class="lead">An honest table of contents. The numbers are the entries. The tags are how I think about them; they are not promises about what they contain.</p>
+  </section>
+
+  <div class="tag-cloud">
+    <a class="tag-card" href="#trueborn">
+      <span class="tag-card__count">09</span>
+      <span class="tag-card__name">Trueborn</span>
+      <span class="tag-card__meta">Novel · drafts &amp; fragments</span>
+    </a>
+    <a class="tag-card" href="#code">
+      <span class="tag-card__count">14</span>
+      <span class="tag-card__name">Code</span>
+      <span class="tag-card__meta">Field notes · post-mortems</span>
+    </a>
+    <a class="tag-card" href="#botany">
+      <span class="tag-card__count">06</span>
+      <span class="tag-card__name">Alpine botany</span>
+      <span class="tag-card__meta">Cushion plants · scree gardens</span>
+    </a>
+    <a class="tag-card" href="#abandoned">
+      <span class="tag-card__count">11</span>
+      <span class="tag-card__name">Abandoned</span>
+      <span class="tag-card__meta">Side projects · honest deaths</span>
+    </a>
+    <a class="tag-card" href="#curiosities">
+      <span class="tag-card__count">07</span>
+      <span class="tag-card__name">Curiosities</span>
+      <span class="tag-card__meta">Found things · no useful heading</span>
+    </a>
+  </div>
+
+  <div class="section-head" id="trueborn">
+    <h2>Trueborn</h2>
+    <span class="meta">9 entries</span>
+  </div>
+  <div class="tag-list">
+    <span class="tag-list__date">Apr 22, 2026</span>
+    <span class="tag-list__title"><a href="index.html#trueborn-ch07">The Cartographer Who Refused North</a></span>
+    <span class="tag-list__tags"><span class="tag tag--filled">Trueborn</span></span>
+    <span class="tag-list__read">14 min</span>
+  </div>
+  <div class="tag-list">
+    <span class="tag-list__date">Mar 08, 2026</span>
+    <span class="tag-list__title"><a href="index.html#trueborn-fragments">Three Sentences I Cut This Week</a></span>
+    <span class="tag-list__tags"><span class="tag tag--filled">Trueborn</span></span>
+    <span class="tag-list__read">2 min</span>
+  </div>
+
+  <div class="section-head" id="code">
+    <h2>Code</h2>
+    <span class="meta">14 entries</span>
+  </div>
+  <div class="tag-list">
+    <span class="tag-list__date">Apr 18, 2026</span>
+    <span class="tag-list__title"><a href="index.html#details-vt">A Front Page That Expands In Place</a></span>
+    <span class="tag-list__tags"><span class="tag tag--filled">Code</span></span>
+    <span class="tag-list__read">8 min</span>
+  </div>
+  <div class="tag-list">
+    <span class="tag-list__date">Mar 28, 2026</span>
+    <span class="tag-list__title"><a href="index.html#abandoned-mailto">mailto://, A Webmail Client With No Servers</a></span>
+    <span class="tag-list__tags"><span class="tag tag--filled">Code</span><span class="tag tag--outline">Abandoned</span></span>
+    <span class="tag-list__read">6 min</span>
+  </div>
+  <div class="tag-list">
+    <span class="tag-list__date">Feb 28, 2026</span>
+    <span class="tag-list__title"><a href="index.html#lighthouse-100">Lighthouse 100 Is A Personality Disorder</a></span>
+    <span class="tag-list__tags"><span class="tag tag--filled">Code</span></span>
+    <span class="tag-list__read">11 min</span>
+  </div>
+
+  <div class="section-head" id="botany">
+    <h2>Alpine botany</h2>
+    <span class="meta">6 entries</span>
+  </div>
+  <div class="tag-list">
+    <span class="tag-list__date">Mar 15, 2026</span>
+    <span class="tag-list__title"><a href="index.html#saxifraga">Saxifraga oppositifolia: A Defence</a></span>
+    <span class="tag-list__tags"><span class="tag tag--filled">Alpine botany</span></span>
+    <span class="tag-list__read">7 min</span>
+  </div>
+
+  <div class="section-head" id="curiosities">
+    <h2>Curiosities</h2>
+    <span class="meta">7 entries</span>
+  </div>
+  <div class="tag-list">
+    <span class="tag-list__date">Apr 09, 2026</span>
+    <span class="tag-list__title"><a href="index.html#krampuskarten">Krampuskarten, 1908–1923</a></span>
+    <span class="tag-list__tags"><span class="tag tag--filled">Curiosities</span></span>
+    <span class="tag-list__read">5 min</span>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,25 @@
+node_modules/
+.wrangler/
+.dev.vars
+.env
+.env.local
+.env.*.local
+*.log
+npm-debug.log*
+.DS_Store
+dist/
+build/
+*.tsbuildinfo
+.vscode/
+.idea/
+coverage/
+
+# Edit-as-file scratch — the skill writes post bodies here for VS Code editing.
+# Local copies, not source of truth (D1 is). Safe to delete anytime.
+.drafts/
+
+*.jpeg
+*.jpg
+*.png
+*.gif
+*.bmp

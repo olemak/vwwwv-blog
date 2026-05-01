@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>About — vwwwv</title>
+<link rel="stylesheet" href="tokens.css?v=2">
+<style>
+/* page width unified via tokens.css */
+.about-hero, .about-grid { max-width: 880px; }
+.masthead { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 24px 0 14px; border-top: 6px solid var(--ink); border-bottom: 2px solid var(--ink); position: relative; margin-top: 22px; }
+.masthead::before { content:""; position:absolute; left:0; right:0; top:-12px; border-top: 2px solid var(--ink); }
+.masthead__edition { position:absolute; top:-28px; right:0; font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); }
+.wordmark { display: block; height: 38px; width: auto; }
+.masthead__nav { display: flex; gap: 0; }
+.masthead__nav a { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: .14em; font-size: 14px; color: var(--ink); padding: 6px 18px; border-left: 2px solid var(--ink); line-height: 1; }
+.masthead__nav a:first-child { border-left: 0; padding-left: 0; }
+.masthead__nav a:last-child { padding-right: 0; }
+.masthead__nav a.is-active { color: var(--poster-red); }
+.masthead__nav a:hover { text-decoration: none; color: var(--poster-red); }
+.about-hero { padding: 48px 0 32px; }
+.about-hero h1 { font-size: clamp(48px, 7vw, 96px); }
+.about-hero .lead { margin-top: 18px; font-size: 22px; line-height: 1.4; max-width: 32em; color: var(--ink); }
+.about-grid { display: grid; grid-template-columns: 1fr 220px; gap: 48px; padding-top: 22px; }
+@media (max-width: 760px) { .about-grid { grid-template-columns: 1fr; } }
+.about-prose { font-size: 17px; line-height: 1.62; color: var(--ink); }
+.about-prose p { margin: 0 0 1em; text-wrap: pretty; }
+.about-prose p:first-child::first-letter { font-family: var(--font-display); font-weight: 700; font-size: 4.2em; line-height: .85; float: left; padding: 4px 10px 0 0; color: var(--poster-red); }
+.about-prose h2 { margin: 28px 0 8px; font-size: 22px; }
+.facts dt { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--poster-red); margin-top: 14px; }
+.facts dt:first-child { margin-top: 0; }
+.facts dd { margin: 2px 0 0; color: var(--ink); font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="masthead">
+    <div class="masthead__edition">Statement of Intent · No. 01</div>
+    <a class="masthead__brand" href="index.html" aria-label="vwwwv home" style="display:flex;align-items:center;text-decoration:none;">
+      <img class="wordmark" src="wordmark.svg" alt="vwwwv">
+    </a>
+    <nav class="masthead__nav">
+      <a href="index.html">Blog</a>
+      <a href="tag.html">Tag</a>
+      <a href="about.html" class="is-active">About</a>
+      <a href="system.html">System</a>
+    </nav>
+  </header>
+
+  <section class="about-hero">
+    <div class="meta" style="color: var(--poster-red); margin-bottom: 14px;">Statement of Intent · No. 01</div>
+    <h1>I write things down so I can stop carrying them.</h1>
+    <p class="lead">This site is a long-running exhaust pipe for a novel called <em>Trueborn</em>, a handful of code experiments most of which were abandoned for honest reasons, and a small but growing file on alpine plants that survive at heights I never will.</p>
+  </section>
+
+  <hr class="rule-double">
+
+  <div class="about-grid">
+    <div class="about-prose">
+      <p>I am not building a brand. I have done that job for other people and I know what it costs. This is the opposite of that — a place to publish work that does not yet need to behave.</p>
+      <h2>What you'll find here</h2>
+      <p><strong>Trueborn.</strong> Drafts, fragments, sentences cut from chapters, occasionally a whole scene. The novel is set on a continent that does not exist and concerns a cartographer who refuses to draw it correctly. I post in chapter order when I can and out of order when I can't.</p>
+      <p><strong>Code.</strong> Field notes from things I built. Mostly small. Mostly abandoned. The post-mortems are more honest than the launches were. There is no startup advice here.</p>
+      <p><strong>Curiosities.</strong> A loose folder. Vintage postcards depicting violence as folk art. The history of the gear icon. The first known use of the word "user" in a software manual. A defence of the purple saxifrage.</p>
+      <h2>What you won't find</h2>
+      <p>A newsletter signup. A "subscribe to my next thing" lightbox. An author photograph in soft focus against a brick wall. A list of the podcasts I have appeared on. A weekly digest. A commenting system. A newsletter. (I said this twice.)</p>
+      <h2>Contact</h2>
+      <p>If you want to write to me, the address is on the colophon page, and is a real address that goes to a real inbox that I read on Sundays.</p>
+    </div>
+
+    <aside>
+      <dl class="facts">
+        <dt>Writing from</dt><dd>Bern, mostly. Sometimes a hut at 2,400 m.</dd>
+        <dt>Day job</dt><dd>Distributed systems. Not the kind that sell ads.</dd>
+        <dt>Languages</dt><dd>English, German (Swiss inflected), enough French to apologise.</dd>
+        <dt>Stack</dt><dd>Vanilla HTML, Cloudflare Workers, D1, R2. ~14 KB gzipped.</dd>
+        <dt>Mailing list</dt><dd>None. By design.</dd>
+        <dt>Comments</dt><dd>None. Reply by mail.</dd>
+      </dl>
+    </aside>
+  </div>
+</div>
+</body>
+</html>

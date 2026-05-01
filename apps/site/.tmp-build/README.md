@@ -1,0 +1,1 @@
+This folder contains the built output assets for the worker "vwwwv-blog" generated at 2026-05-01T00:08:13.432Z.

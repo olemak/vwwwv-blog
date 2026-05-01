@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vwwwv — code, fiction, and curiosities</title>
+<meta name="description" content="A personal feed of essays, fragments of Trueborn, abandoned side projects, and alpine-botany rabbit holes.">
+<link rel="stylesheet" href="tokens.css?v=2">
+<style>
+/* ─────────────────────────────────────────────
+   Page layout — newspaper front page
+   ───────────────────────────────────────────── */
+/* page width unified via tokens.css */
+
+/* ─── Masthead ─────────────────────────────── */
+/* Compact: wordmark left, menu right, single horizontal bar. */
+.masthead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding: 24px 0 14px;
+  border-top: 6px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+  position: relative;
+  margin-top: 22px;
+}
+.masthead::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: -12px;
+  border-top: 2px solid var(--ink);
+}
+.masthead__edition {
+  position: absolute;
+  top: -28px;
+  right: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.masthead__brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-decoration: none;
+}
+.masthead__brand:hover { text-decoration: none; }
+.wordmark {
+  display: block;
+  height: 38px;
+  width: auto;
+}
+.masthead__nav { display: flex; gap: 0; }
+.masthead__nav a {
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .14em;
+  font-size: 14px;
+  color: var(--ink);
+  padding: 6px 18px 6px 18px;
+  border-left: 2px solid var(--ink);
+  line-height: 1;
+}
+.masthead__nav a:first-child { border-left: 0; padding-left: 0; }
+.masthead__nav a:last-child { padding-right: 0; }
+.masthead__nav a.is-active { color: var(--poster-red); }
+.masthead__nav a:hover { text-decoration: none; color: var(--poster-red); }
+.nav__primary a.is-active:hover { background: var(--poster-red); color: var(--paper-cream); }
+
+.nav__search {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  display: flex; align-items: center; gap: 8px;
+}
+.nav__search input {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid var(--ink);
+  padding: 4px 2px;
+  width: 160px;
+  color: var(--ink);
+  outline: none;
+}
+.nav__search input::placeholder { color: var(--ink-soft); }
+
+/* ─── Tag bar ─────────────────────────────── */
+.tagbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 0 22px;
+  flex-wrap: wrap;
+}
+.tagbar__label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--ink);
+  margin-right: 4px;
+}
+
+/* ─── Feed ────────────────────────────────── */
+.feed { padding-top: 0; }
+
+.post {
+  border-bottom: 2px solid var(--ink);
+  padding: 28px 0 32px;
+  position: relative;
+}
+.post:first-child { padding-top: 8px; }
+.post:last-child  { border-bottom: 0; }
+
+.post__summary {
+  list-style: none;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
+.post__summary::-webkit-details-marker { display: none; }
+.post__summary::marker { display: none; }
+
+/* Post with image: the figure is the headline. */
+.post--with-image .post__summary { grid-template-columns: 1fr; }
+
+/* Index number — newspaper-style page numbering */
+.post__index {
+  position: absolute;
+  top: 28px; left: -56px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 32px;
+  color: var(--poster-red);
+  line-height: 1;
+}
+@media (max-width: 1240px) { .post__index { display: none; } }
+
+.post__figure { position: relative; }
+
+/* The title sits ABOVE the body when expanded, OVERLAID on the image when collapsed.
+   View Transitions API handles the choreography between the two states. */
+.post__title {
+  view-transition-name: var(--vt-title, none);
+}
+.post__media {
+  view-transition-name: var(--vt-media, none);
+}
+
+.post__title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.post__kicker {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--poster-red);
+}
+.post__excerpt {
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--ink);
+  max-width: 64ch;
+}
+.post__meta-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding-top: 8px;
+}
+
+/* When details is OPEN: title moves ABOVE the body, figure relaxes to natural. */
+.post[open] .post__summary { gap: 22px; }
+.post[open] .post__overlay-title { display: none; }
+.post[open] .post__title-expanded { display: flex; }
+.post[open] .figure--crop { aspect-ratio: auto; }
+.post[open] .figure--crop .figure__media { aspect-ratio: 16 / 10; }
+.post[open] .figure__overlay { display: none; }
+
+.post__title-expanded { display: none; flex-direction: column; gap: 8px; padding-top: 6px; }
+
+/* Body */
+.post__body {
+  padding-top: 22px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 40px;
+}
+@media (max-width: 760px) {
+  .post__body { grid-template-columns: 1fr; gap: 18px; }
+}
+.post__prose {
+  font-size: 17px;
+  line-height: 1.62;
+  color: var(--ink);
+  max-width: 68ch;
+}
+.post__prose p { margin: 0 0 1em; text-wrap: pretty; }
+.post__prose p:first-child::first-letter {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 4.2em;
+  line-height: .85;
+  float: left;
+  padding: 4px 10px 0 0;
+  color: var(--poster-red);
+}
+.post__prose blockquote {
+  margin: 1.2em 0;
+  padding: 0 0 0 18px;
+  border-left: 4px solid var(--poster-red);
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .01em;
+  font-size: 22px;
+  line-height: 1.2;
+  color: var(--ink);
+}
+.post__prose code {
+  font-family: var(--font-mono);
+  background: var(--paper-cream-deep);
+  padding: 1px 5px;
+  border: 1px solid var(--ink);
+  font-size: .9em;
+}
+.post__prose hr { border: 0; border-top: 2px solid var(--ink); margin: 24px 0; }
+.post__prose .figure { margin: 22px 0 6px; }
+.post__prose h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  font-size: 22px;
+  color: var(--ink);
+  margin: 28px 0 8px;
+}
+.post__prose .pullquote {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 32px;
+  line-height: 1.05;
+  text-transform: uppercase;
+  color: var(--poster-red);
+  margin: 28px -8px;
+  padding: 18px 0;
+  border-top: 6px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+}
+
+.post__sidebar {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  padding-top: 4px;
+}
+.post__sidebar dt {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--poster-red);
+  margin-top: 12px;
+}
+.post__sidebar dt:first-child { margin-top: 0; }
+.post__sidebar dd { margin: 2px 0 0; color: var(--ink); }
+
+/* Collapse/expand affordance */
+.post__expand-cue {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.post__expand-cue::before {
+  content: "▸";
+  display: inline-block;
+  color: var(--poster-red);
+  transition: transform .2s;
+  font-size: 13px;
+}
+.post[open] .post__expand-cue::before { transform: rotate(90deg); }
+.post[open] .post__expand-cue .label-closed { display: none; }
+.post[open] .post__expand-cue .label-open { display: inline; }
+.post__expand-cue .label-open { display: none; }
+
+/* Posts without images — fallback collapsed treatment */
+.post--no-image .post__summary {
+  grid-template-columns: 1fr;
+}
+
+/* ─── Footer ──────────────────────────────── */
+.foot {
+  margin-top: 64px;
+  padding-top: 22px;
+  border-top: 6px solid var(--ink);
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.foot::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: 10px;
+  height: 0; border-top: 2px solid var(--ink);
+}
+.foot__col {
+  font-size: 13px;
+  line-height: 1.5;
+}
+.foot__col strong {
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  font-size: 12px;
+  color: var(--poster-red);
+  display: block;
+  margin-bottom: 4px;
+}
+.foot__col a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.foot__colophon {
+  max-width: 320px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+/* ─── View Transitions: per-post same-document choreography ─────── */
+/* Cross-document opt-in lives in tokens.css. The same-document
+   choreography below handles the <details> expand on the feed. */
+::view-transition-group(*) {
+  animation-duration: .55s;
+  animation-timing-function: cubic-bezier(.7,0,.2,1);
+}
+
+/* ─── Tweaks-affected variables (defaults match :root) ── */
+.theme-noir {
+  --paper-cream: #1a1614;
+  --paper-cream-deep: #211c19;
+  --ink: #EDE3CE;
+  --ink-soft: #C9BFA9;
+  --poster-red: #E63A4F;
+}
+.theme-noir body::before { opacity: .35; }
+</style>
+</head>
+<body>
+
+<div class="page" id="app">
+
+  <!-- ─── Masthead ─── -->
+  <header class="masthead">
+    <div class="masthead__edition">Vol. 04 · Edition CXVII · Thursday, 30 April 2026 · Bern</div>
+    <a class="masthead__brand" href="index.html" aria-label="vwwwv home">
+      <img class="wordmark" src="wordmark.svg" alt="vwwwv">
+    </a>
+    <nav class="masthead__nav" aria-label="Primary">
+      <a href="index.html" class="is-active">Blog</a>
+      <a href="tag.html">Tag</a>
+      <a href="about.html">About</a>
+      <a href="system.html">System</a>
+    </nav>
+  </header>
+
+  <hr class="rule-double" aria-hidden="true" style="margin-top: 28px;">
+
+  <!-- ─── Feed ─── -->
+  <main class="feed" id="feed"><!-- posts injected here --></main>
+
+  <!-- ─── Foot ─── -->
+  <footer class="foot">
+    <div class="foot__col">
+      <strong>Elsewhere</strong>
+      <a href="#">github</a> · <a href="#">are.na</a> · <a href="#">rss</a>
+    </div>
+    <div class="foot__col">
+      <strong>Sections</strong>
+      <a href="#">Trueborn</a> · <a href="#">Field notes</a> · <a href="#">Junk drawer</a>
+    </div>
+    <div class="foot__col foot__colophon">
+      Set with system-ui and a heavy hand. Served from Cloudflare. No
+      analytics, no fonts from a CDN, no people on laptops. Built in 14&nbsp;KB.
+      © 2026 — please reproduce with attribution and bad intent.
+    </div>
+  </footer>
+
+</div>
+
+<!-- Tweaks (dev-only design tool — strip for production) -->
+<script src="tweaks.js"></script>
+
+<script id="post-data" type="application/json">
+[]
+</script>
+
+<script src="posts.js"></script>
+<script src="feed.js"></script>
+</body>
+</html>
