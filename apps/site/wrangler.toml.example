@@ -1,0 +1,53 @@
+# wrangler.toml.example — copy to wrangler.toml and fill in your own IDs.
+#
+# wrangler.toml itself is gitignored so the fork stays clean. Bootstrap
+# instructions (the wrangler commands that produce these IDs) live in
+# docs/wrangler-bootstrap.md.
+
+name = "vwwwv-blog"
+main = "src/index.ts"
+compatibility_date = "2026-05-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Static assets — served directly from public/.
+# See https://developers.cloudflare.com/workers/static-assets/
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+# Custom domains. Replace with your own — or comment out and the Worker
+# is reachable at https://<worker-name>.<your-account>.workers.dev
+# routes = [
+#   { pattern = "yourdomain.com", custom_domain = true },
+#   { pattern = "blog.yourdomain.com", custom_domain = true }
+# ]
+
+# Bindings — fill in IDs after running the bootstrap commands. See
+# docs/wrangler-bootstrap.md.
+
+[[d1_databases]]
+binding = "DB"
+database_name = "REPLACE_WITH_YOUR_D1_DATABASE_NAME"
+database_id = "REPLACE_AFTER_WRANGLER_D1_CREATE"
+
+[[kv_namespaces]]
+binding = "FLAGS"
+id = "REPLACE_AFTER_WRANGLER_KV_NAMESPACE_CREATE"
+
+[[r2_buckets]]
+binding = "IMAGES"
+bucket_name = "REPLACE_WITH_YOUR_R2_BUCKET_NAME"
+
+[vars]
+# Public, non-secret config. Replace with your own values.
+SITE_URL = "https://yourdomain.com"
+DEFAULT_AUTHOR_ID = "your-author-id"
+# CF_ACCESS_TEAM = "your-team.cloudflareaccess.com"   # set after Access setup
+
+# Secrets (NOT committed) — set with `wrangler secret put NAME`:
+#   CF_ACCESS_CLIENT_ID       — service-token ID for publish auth
+#   CF_ACCESS_CLIENT_SECRET   — service-token secret
+#   FLAG_COOKIE_SECRET        — signs the preview-override cookie
+
+[observability]
+enabled = true

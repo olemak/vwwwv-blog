@@ -18,6 +18,11 @@ coverage/
 # Local copies, not source of truth (D1 is). Safe to delete anytime.
 .drafts/
 
+# Real wrangler config — has your account-specific D1 / KV / R2 IDs and
+# custom domain routes. Forks should copy `wrangler.toml.example` to
+# `wrangler.toml` and fill in their own.
+apps/site/wrangler.toml
+
 *.jpeg
 *.jpg
 *.png

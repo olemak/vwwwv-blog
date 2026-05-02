@@ -10,15 +10,18 @@ wrangler --version   # >= 4.0
 wrangler login       # opens a browser; one-time
 ```
 
-## 1. Install workspace deps
+## 1. Install workspace deps and copy the wrangler config
 
 From the repo root:
 
 ```bash
 npm install
+cp apps/site/wrangler.toml.example apps/site/wrangler.toml
 ```
 
-This installs everything via npm workspaces. `apps/site` picks up `@vwwwv/db`, `@vwwwv/flags`, and `marked`.
+`wrangler.toml` is gitignored — every fork has its own account-specific IDs (D1, KV, R2). Yours go in the copy you just made; the example stays in git as the template.
+
+`npm install` brings in everything via npm workspaces — `apps/site` picks up `@vwwwv/db`, `@vwwwv/flags`, and `marked`.
 
 ## 2. Create Cloudflare resources
 
