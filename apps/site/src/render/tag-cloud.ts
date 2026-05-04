@@ -98,7 +98,7 @@ function meta(tagName: string): string {
   return known[tagName.toLowerCase()] ?? 'Filed';
 }
 
-const tagStyles = `
+const tagStyles = /* css */`
   .tag-hero { padding: 48px 0 24px; }
   .tag-hero h1 { font-size: clamp(48px, 7vw, 96px); }
   .tag-hero .lead { margin-top: 18px; max-width: 36em; color: var(--ink); }

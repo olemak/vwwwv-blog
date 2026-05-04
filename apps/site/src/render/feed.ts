@@ -23,18 +23,18 @@ export function renderFeed(opts: FeedRenderOptions): string {
 
   const title = tagFilter
     ? `${tagFilter} — vwwwv`
-    : 'vwwwv — code, fiction, and curiosities';
+    : 'vwwwv — code, fiction, curiosities';
 
   const description = tagFilter
     ? `Posts tagged "${tagFilter}" on vwwwv.org.`
-    : 'A personal feed of essays, fragments of Trueborn, abandoned side projects, and alpine-botany rabbit holes.';
+    : 'A personal feed of essays, creative writing fragments, side projects, rabbit hole spelunking journal entries.';
 
   const edition = tagFilter
     ? `Filed under ${tagFilter}`
     : formatEditionLine(Math.floor(Date.now() / 1000));
 
   const intro = tagFilter
-    ? `
+    ? /* html */`
       <section style="padding: 24px 0 12px">
         <div class="meta" style="color: var(--poster-red); margin-bottom: 8px;">Filed under</div>
         <h1 style="font-size: clamp(40px, 6vw, 72px)">${e(tagFilter)}</h1>
@@ -51,7 +51,15 @@ export function renderFeed(opts: FeedRenderOptions): string {
         posts.length === 0
           ? `<p class="lead" style="padding: 32px 0;">Nothing here yet. ${tagFilter ? `Try another tag.` : `Drafts are state, not files — once one is published, it'll show up here.`}</p>`
           : posts
-              .map((post, i) => postCard(post, { index: i + 1, showReadingTime }))
+              .map((post, i) =>
+                postCard(post, {
+                  index: i + 1,
+                  showReadingTime,
+                  // First two posts are likely above the fold on mobile —
+                  // their images get fetchpriority=high to win the LCP race.
+                  eager: i < 2,
+                })
+              )
               .join('\n')
       }
     </main>
@@ -67,6 +75,5 @@ export function renderFeed(opts: FeedRenderOptions): string {
     edition,
     pageStyles: feedPageStyles,
     body,
-    includeFeedJs: true,
   });
 }

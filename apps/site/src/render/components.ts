@@ -43,19 +43,15 @@ export function footer(): string {
     <footer class="foot">
       <div class="foot__col">
         <strong>Elsewhere</strong>
-        <a href="https://github.com/" rel="me">github</a>
-      </div>
-      <div class="foot__col">
-        <strong>Sections</strong>
-        <a href="/tag/trueborn">trueborn</a> ·
-        <a href="/tag/code">code</a> ·
-        <a href="/tag/curiosities">curiosities</a>
+        <a href="https://github.com/olemak" rel="me">github</a>
+        <a href="https://github.com/olemak/vwwwv-blog" title="View source code on github">repo</a>
+        <a href="https://www.linkedin.com/in/olemak/">linkedin</a>
       </div>
       <div class="foot__col foot__colophon">
-        Set with system-ui and a heavy hand. Served from Cloudflare. No
-        analytics, no fonts from a CDN, no people on laptops. Built in
-        14&nbsp;KB. © ${new Date().getFullYear()} — please reproduce with
-        attribution and bad intent.
+        Set with system fonts and a Lighthouse 100 personality disorder. Served from Cloudflare. No
+        analytics, no external fonts, no cookies, no GDPR. Built on a weird stack and a budget of 
+        14&nbsp;KB. © ${new Date().getFullYear()} — please reproduce with attribution and whatever 
+        intent you happen to be in possession of.
       </div>
     </footer>
   `;
@@ -97,6 +93,10 @@ export interface PostCardOptions {
   index: number;             // display number (1-based)
   showReadingTime: boolean;  // reading-time flag
   open?: boolean;            // start expanded?
+  /** Eager-load the featured image (skip loading=lazy, set fetchpriority=high).
+   *  Use for posts above the fold — typically the first 1–2 in the feed and
+   *  the only post on /post/<slug>. */
+  eager?: boolean;
 }
 
 export function postCard(
@@ -113,7 +113,7 @@ export function postCard(
   const readtime = opts.showReadingTime ? formatReadingTime(post.body) : null;
 
   const figureBlock = hasImage
-    ? renderFeaturedFigure(post)
+    ? renderFeaturedFigure(post, { eager: opts.eager === true })
     : '';
 
   const expandedTitleBlock = `
@@ -185,7 +185,10 @@ export function postCard(
   `;
 }
 
-function renderFeaturedFigure(post: PostWithRelations): string {
+function renderFeaturedFigure(
+  post: PostWithRelations,
+  { eager = false }: { eager?: boolean } = {}
+): string {
   const img = post.featured_image!;
   const dateText = formatDateLong(post.published_at ?? post.created_at);
   const primaryTag = post.tags[0] ?? '';
@@ -194,15 +197,21 @@ function renderFeaturedFigure(post: PostWithRelations): string {
     img.source_type === 'screenshot' ? ' figure--screenshot' : '';
   const alt = img.alt ?? post.title;
 
-  return `
+  // Above-the-fold images load eagerly with fetchpriority=high so the LCP
+  // candidate is discovered immediately. Below-the-fold images keep
+  // loading=lazy to skip the request entirely until the user scrolls.
+  const loadingAttrs = eager
+    ? `fetchpriority="high" decoding="async"`
+    : `loading="lazy" decoding="async"`;
+
+  return /* html */`
     <figure class="figure figure--crop${sourceCls}" data-vt-media="m-${escapeAttr(post.id)}">
       <img class="figure__media"
            src="${escapeAttr(imageUrl(img.r2_key, 1024))}"
            srcset="${escapeAttr(imageSrcset(img.r2_key))}"
            sizes="(max-width: 760px) calc(100vw - 40px), min(1024px, 100vw - 112px)"
            alt="${escapeAttr(alt)}"
-           loading="lazy"
-           decoding="async"
+           ${loadingAttrs}
            ${img.width ? `width="${img.width}"` : ''} ${img.height ? `height="${img.height}"` : ''}>
       <div class="figure__overlay">
         <div class="post__overlay-title">
@@ -211,7 +220,7 @@ function renderFeaturedFigure(post: PostWithRelations): string {
         </div>
       </div>
     </figure>
-    ${img.caption ? `
+    ${img.caption ? /* html */`
     <figcaption class="figure-caption" aria-hidden="true">
       <span class="caption">${e(dateText)}</span>
       <span class="caption-text">${e(img.caption)}</span>

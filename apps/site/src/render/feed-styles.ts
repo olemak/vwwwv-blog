@@ -1,7 +1,7 @@
 // Page-specific styles for both /  and /post/<slug>. Lives in its own
 // module so the two renderers don't duplicate the string.
 
-export const feedPageStyles = `
+export const feedPageStyles = /* css */`
   .feed { padding-top: 0; }
 
   .post {
@@ -75,6 +75,28 @@ export const feedPageStyles = `
     object-fit: initial;
   }
   .post[open] .figure__overlay { display: none; }
+
+  /* Figure caption only shows when the post is expanded — the cropped
+     thumbnail in the feed view doesn't need it. */
+  .post:not([open]) .figure-caption { display: none; }
+
+  /* Smooth open/close animation for the native <details> toggle.
+     Uses ::details-content (Chrome 131+, recent Safari/Firefox) plus
+     interpolate-size to interpolate between block-size: 0 and block-size: auto.
+     Older browsers gracefully fall back to instant open/close. */
+  .post::details-content {
+    block-size: 0;
+    overflow: hidden;
+    interpolate-size: allow-keywords;
+    transition: block-size 0.4s cubic-bezier(.7, 0, .2, 1),
+                content-visibility 0.4s allow-discrete;
+  }
+  .post[open]::details-content {
+    block-size: auto;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .post::details-content { transition: none; }
+  }
 
   .post__title-expanded { display: none; flex-direction: column; gap: 8px; padding-top: 6px; }
 

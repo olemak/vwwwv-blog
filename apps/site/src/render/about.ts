@@ -13,10 +13,10 @@ export interface AboutRenderOptions {
 export function renderAbout(opts: AboutRenderOptions): string {
   const { author, wordmarkVariant } = opts;
 
-  const body = `
+  const body = /* html */`
     <section class="about-hero">
       <div class="meta" style="color: var(--poster-red); margin-bottom: 14px;">Statement of intent · No. 01</div>
-      <h1>I write things down so I can stop carrying them.</h1>
+      <h1>I write ideas down so I can stop carrying them around</h1>
       ${author.bio ? `<p class="lead">${e(author.bio)}</p>` : ''}
     </section>
 
@@ -24,28 +24,28 @@ export function renderAbout(opts: AboutRenderOptions): string {
 
     <div class="about-grid">
       <div class="about-prose">
-        <p>This site is a long-running exhaust pipe for a novel called <em>Trueborn</em>, a handful of code experiments most of which were abandoned for honest reasons, and a small but growing file on alpine plants that survive at heights I never will.</p>
+        <p>This site is an exhaust pipe for things I think about, write about, a few portfolio items to showcase things I did, once, a handful of code experiments (many of them abandoned), and a good chunk of just plain curiosities that I have been thinking about and figured I should get out of my system by writing about them. In other words: It's a blog.</p>
 
         <h2>What you'll find here</h2>
-        <p><strong>Trueborn.</strong> Drafts, fragments, sentences cut from chapters, occasionally a whole scene. The novel is set on a continent that does not exist and concerns a cartographer who refuses to draw it correctly. I post in chapter order when I can and out of order when I can't.</p>
-        <p><strong>Code.</strong> Field notes from things I built. Mostly small. Mostly abandoned. The post-mortems are more honest than the launches were. There is no startup advice here.</p>
-        <p><strong>Curiosities.</strong> A loose folder. Vintage postcards depicting violence as folk art. The history of the gear icon. The first known use of the word "user" in a software manual. A defence of the purple saxifrage.</p>
+        <p><strong>Trueborn.</strong> Drafts, fragments, sentences cut from chapters, occasionally a whole scene. This is a novel, by the way. I'll try to get it published when it is done, just for fun.</p>
+        <p><strong>Code.</strong> Field notes from things I built. Mostly small. Honest post-mortems, hopefully, interspersed with anecdotes you might find interesting and the odd pun. There is no startup advice here.</p>
+        <p><strong>Curiosities.</strong> Cool stuff I came across, too random for the other categories. Maybe novel ideas I am unlikely to build on. Article stubs. Disjointed opinions.</p>
 
         <h2>What you won't find</h2>
         <p>A newsletter signup. A "subscribe to my next thing" lightbox. An author photograph in soft focus against a brick wall. A list of the podcasts I have appeared on. A weekly digest. A commenting system. A newsletter. (I said this twice.)</p>
 
         <h2>Contact</h2>
-        <p>If you want to write to me, the address is on the colophon page, and is a real address that goes to a real inbox that I read on Sundays.</p>
+        <p>If you want to write to me, you can reach me on my linkedin page, which is linked in, somewhere. Try the footer.</p>
       </div>
 
       <aside>
         <dl class="facts">
-          <dt>Writing from</dt><dd>Bern, mostly. Sometimes a hut at 2,400 m.</dd>
-          <dt>Day job</dt><dd>Distributed systems. Not the kind that sell ads.</dd>
-          <dt>Languages</dt><dd>English, German (Swiss inflected), enough French to apologise.</dd>
-          <dt>Stack</dt><dd>Vanilla HTML, Cloudflare Workers, D1, R2. ~14 KB gzipped.</dd>
-          <dt>Mailing list</dt><dd>None. By design.</dd>
-          <dt>Comments</dt><dd>None. Reply by mail.</dd>
+          <dt>Writing from</dt><dd>Oslo, mostly.</dd>
+          <dt>Day job</dt><dd>Software engineering.</dd>
+          <dt>Languages</dt><dd>Norwegian, English, some German, barely enough French to apologise, atrocious Duolingo Italian and just enough Portuguese to get in trouble.</dd>
+          <dt>Stack</dt><dd>Framework-free vanilla HTML with liberal use of modern web APIs, minimal JS, inline CSS, Serverside rendered and hosted on the edge by Cloudflare Workers, D1, R2. ~14 KB gzipped. The editor interface is a markdown file and an AI skill. Oh, you wanted to know if <em>I'm</em> stacked? Well, no.</dd>
+          <dt>Mailing list</dt><dd>Hah, no.</dd>
+          <dt>Comments</dt><dd>Also no. You are welcome to make a post on Reddit or somewhere else if you want. Send me a message on linkedin if you'd like me to reply.</dd>
         </dl>
       </aside>
     </div>
@@ -53,7 +53,7 @@ export function renderAbout(opts: AboutRenderOptions): string {
 
   return page({
     title: 'About — vwwwv',
-    description: `About the author of vwwwv.org.`,
+    description: `About the author and the site.`,
     activeNav: 'about',
     wordmarkVariant,
     edition: 'Statement of intent · No. 01',
@@ -62,7 +62,7 @@ export function renderAbout(opts: AboutRenderOptions): string {
   });
 }
 
-const aboutStyles = `
+const aboutStyles = /* css */`
   .about-hero, .about-grid { max-width: 880px; }
   .about-hero { padding: 48px 0 32px; }
   .about-hero h1 { font-size: clamp(48px, 7vw, 96px); }

@@ -3,6 +3,8 @@
 
 import { escapeHtml as e } from './escape';
 import { masthead, footer, type ActiveNav } from './components';
+import { tokensCss } from './tokens';
+import { wordmarkFaviconDataUri } from './wordmark';
 
 export interface PageOptions {
   title: string;
@@ -14,8 +16,6 @@ export interface PageOptions {
   pageStyles?: string;
   /** The <body> content, between masthead and footer. */
   body: string;
-  /** Whether to load /feed.js for the same-document expand choreography. */
-  includeFeedJs?: boolean;
   /** Optional canonical URL override. */
   canonical?: string;
   /** Custom <head> additions (RSS link, og: tags, etc.). */
@@ -25,13 +25,12 @@ export interface PageOptions {
 export function page(opts: PageOptions): string {
   const {
     title,
-    description = 'vwwwv — a personal feed of essays, fragments of Trueborn, abandoned side projects, and alpine-botany rabbit holes.',
+    description = 'vwwwv — a personal feed of essays, fragments, side projects, and rabbit hole exploration.',
     activeNav,
     wordmarkVariant,
     edition,
     pageStyles,
     body,
-    includeFeedJs,
     canonical,
     extraHead,
   } = opts;
@@ -45,9 +44,8 @@ export function page(opts: PageOptions): string {
   <title>${e(title)}</title>
   <meta name="description" content="${e(description)}">
   ${canonical ? `<link rel="canonical" href="${e(canonical)}">` : ''}
-  <link rel="stylesheet" href="/tokens.css">
-  <link rel="icon" href="/wordmark.svg" type="image/svg+xml">
-  ${pageStyles ? `<style>${pageStyles}</style>` : ''}
+  <link rel="icon" href="${wordmarkFaviconDataUri()}" type="image/svg+xml">
+  <style>${tokensCss}${pageStyles ?? ''}</style>
   ${extraHead ?? ''}
 </head>
 <body>
@@ -57,7 +55,6 @@ export function page(opts: PageOptions): string {
     ${body}
     ${footer()}
   </div>
-  ${includeFeedJs ? `<script src="/feed.js" defer></script>` : ''}
 </body>
 </html>`;
 }
