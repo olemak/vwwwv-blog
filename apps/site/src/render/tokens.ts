@@ -56,14 +56,17 @@ export const tokensCss = /* css */`
     --page-pad: clamp(20px, 5vw, 56px);
   }
 
+  /* .page no longer reserves the gutter — children handle their own inset.
+     Figures bleed to the viewport edge on mobile, to var(--page-max) on
+     desktop. Text blocks (masthead, post titles, prose, footer) each
+     declare their own padding-inline: var(--page-pad). */
   .page {
     max-width: var(--page-max);
     margin: 0 auto;
-    padding: 0 var(--page-pad) 120px;
+    padding: 0 0 120px;
     position: relative;
     z-index: 1;
   }
-  .figure--bleed { margin-inline: calc(-1 * var(--page-pad)); }
 
   *, *::before, *::after { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
@@ -162,22 +165,75 @@ export const tokensCss = /* css */`
   .tag:hover { text-decoration: none; }
   a.tag:hover { transform: translate(-1px, -1px); box-shadow: 2px 2px 0 var(--ink); }
 
-  /* Figures */
+  /* Figures — full-bleed, no border. The post's border-bottom and the
+     masthead's border-bottom provide all the visual division needed.
+
+     Default state is a halftone plate proof: a tiny 80w version of the
+     image, loaded as ::before background-image, scaled up with
+     image-rendering: pixelated and pushed toward two-tone print with
+     grayscale + boosted contrast. The real <img> sits on top, transparent
+     until JS swaps in its src (on user-open or via the "Drop the plate"
+     global toggle). Network bytes for the AI image are spent only when
+     the human asks for them. */
   .figure {
     margin: 0;
-    border: var(--frame) solid var(--ink);
+    border: 0;
     background: var(--paper-cream-deep);
     position: relative;
     overflow: hidden;
   }
-  .figure__media { display: block; width: 100%; height: 100%; object-fit: cover; }
-  .figure--crop { aspect-ratio: 21 / 9; }
+  .figure::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: var(--lqip);
+    background-size: cover;
+    background-position: center;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    image-rendering: pixelated;
+    filter: grayscale(1) contrast(1.3);
+    z-index: 0;
+  }
+  .figure__media {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: relative;
+    z-index: 1;
+    /* Three opacity states, one transition curve:
+       - no [src]: never been loaded, halftone in front. opacity 0.
+       - [src] alone: loaded and visible, image faded in. opacity 1.
+       - [src] + .figure__media--hidden: was loaded, user toggled slop
+         off. Image fades back to 0 over the same 0.5s, halftone re-emerges
+         from underneath. The bytes stay in memory so the next toggle on
+         is an instant class-flip — no re-fetch, no decode, no flicker.
+         That's why "spamming the toggle" is delightful and free. */
+    opacity: 0;
+    transition: opacity 0.5s ease-out;
+  }
+  .figure__media[src] { opacity: 1; }
+  .figure__media[src].figure__media--hidden { opacity: 0; }
+  .figure--crop {
+    aspect-ratio: 21 / 9;
+    /* Animate the shape change when the post opens. The expanded-state
+       rule (in feed-styles) replaces this ratio with var(--natural-aspect),
+       carried inline on the element from the image's stored width/height.
+       For images already close to 21:9 (most poster art) the visible
+       change is tiny; for taller naturals (3:2, 4:3) the figure grows
+       smoothly into shape alongside the body slide-down. */
+    transition: aspect-ratio 0.4s cubic-bezier(.7, 0, .2, 1);
+  }
   .figure--natural { aspect-ratio: auto; }
+  @media (prefers-reduced-motion: reduce) {
+    .figure--crop { transition: none; }
+  }
 
   .figure__overlay {
     position: absolute;
     inset: auto 0 0 0;
-    padding: 28px 28px 22px;
+    padding: clamp(14px, 4vw, 28px);
     background: linear-gradient(
       to top,
       rgba(20,18,16, .82) 0%,
@@ -188,9 +244,16 @@ export const tokensCss = /* css */`
   }
   .figure__overlay h1,
   .figure__overlay h2 { color: var(--paper-cream); }
+  /* Overlay title needs its own clamp — the global --t-h1 (34–64px) is
+     too aggressive on a 360px viewport when the title is sitting on top
+     of an image. Smaller floor, smaller ceiling. */
+  .figure__overlay h1 {
+    font-size: clamp(22px, 5vw, 48px);
+  }
 
   .figure-caption {
     margin-top: 8px;
+    padding-inline: var(--page-pad);
     display: flex;
     align-items: baseline;
     gap: 10px;
@@ -222,13 +285,14 @@ export const tokensCss = /* css */`
     cursor: pointer;
   }
 
-  /* Masthead */
+  /* Masthead — full-width with a modest internal inset. Borders span
+     the full element width since .page no longer pads. */
   .masthead {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 24px;
-    padding: 24px 0 14px;
+    padding: 24px var(--page-pad) 14px;
     border-top: 6px solid var(--ink);
     border-bottom: 2px solid var(--ink);
     position: relative;
@@ -243,7 +307,7 @@ export const tokensCss = /* css */`
   .masthead__edition {
     position: absolute;
     top: -28px;
-    right: 0;
+    right: var(--page-pad);
     font-family: var(--font-mono);
     font-size: 11px;
     letter-spacing: .1em;
@@ -279,10 +343,51 @@ export const tokensCss = /* css */`
   .masthead__nav a.is-active { color: var(--poster-red); }
   .masthead__nav a:hover { text-decoration: none; color: var(--poster-red); }
 
+  /* "Show slop" — global opt-in for the AI imagery. The default state
+     is the halftone proof; checking the box swaps every figure on the
+     page to its full-resolution AI image and persists the choice in
+     localStorage. The label says what it does (slop, plainly) and the
+     editorial stance; the hairline border + monospace keep it part of
+     the masthead chrome rather than a UI flourish. */
+  .slop-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    padding: 6px 10px;
+    border: 2px solid var(--ink);
+    line-height: 1;
+  }
+  .slop-toggle input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--ink);
+    background: transparent;
+    cursor: pointer;
+    margin: 0;
+    display: inline-block;
+    vertical-align: middle;
+  }
+  .slop-toggle input[type="checkbox"]:checked {
+    background: var(--poster-red);
+    border-color: var(--poster-red);
+  }
+  .slop-toggle:hover { color: var(--ink); }
+  /* When the plate is dropped, surface that in the label colour too. */
+  :root[data-slop="on"] .slop-toggle { color: var(--poster-red); border-color: var(--poster-red); }
+
   /* Footer */
   .foot {
     margin-top: 64px;
-    padding-top: 22px;
+    padding: 22px var(--page-pad) 0;
     border-top: 6px solid var(--ink);
     position: relative;
     display: flex;

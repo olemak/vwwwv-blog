@@ -8,6 +8,16 @@ import { queries, ulid } from '@vwwwv/db';
 import type { Image, ImageSourceType } from '@vwwwv/db';
 import type { Env } from '../env';
 
+// All uploaded images get a long Cache-Control on their R2 object. Two
+// reasons. First, the r2_key is content-addressed (ULID + safe filename),
+// so the bytes at any given key never change — `immutable` is honest.
+// Second, Cloudflare's Image Transformation engine inherits the source's
+// Cache-Control when emitting the transformed response's `Cache-Control`
+// header. Since custom Edge/Browser TTLs for /cdn-cgi/image/* responses
+// are a paid feature, this is the only free-plan lever for getting
+// long-lived caches on transformed images.
+const IMAGE_CACHE_CONTROL = 'public, max-age=31536000, immutable';
+
 export interface UploadImageInput {
   /** Filename — used to derive the R2 key and content type. */
   filename: string;
@@ -49,7 +59,7 @@ export async function uploadImage(
   const contentType = guessContentType(safeName);
 
   await env.IMAGES.put(r2_key, bytes, {
-    httpMetadata: { contentType },
+    httpMetadata: { contentType, cacheControl: IMAGE_CACHE_CONTROL },
   });
 
   await queries.createImage(env.DB, {
@@ -85,6 +95,71 @@ export function listImages(
   options: { limit?: number; offset?: number } = {}
 ): Promise<Image[]> {
   return queries.listImages(env.DB, options);
+}
+
+// ─── Cache-Control backfill ──────────────────────────────────────────
+
+export interface BackfillResult {
+  scanned: number;
+  rewritten: number;
+  alreadyOk: number;
+  bytes: number;
+  failures: { key: string; error: string }[];
+}
+
+/** Walk the entire IMAGES bucket and re-`put` any object whose
+ *  `Cache-Control` header isn't already the immutable long-TTL value.
+ *
+ *  R2's binding API has no copy-with-metadata-only operation, so we have
+ *  to round-trip the bytes through the Worker. Cheap for our handful of
+ *  posters; the function is exposed via /api/admin/backfill-image-cache
+ *  and behind the same auth as the rest of /api/. Skips objects that
+ *  already carry the right header so it's safe to re-run. */
+export async function backfillImageCacheControl(
+  env: Env
+): Promise<BackfillResult> {
+  const result: BackfillResult = {
+    scanned: 0,
+    rewritten: 0,
+    alreadyOk: 0,
+    bytes: 0,
+    failures: [],
+  };
+
+  let cursor: string | undefined = undefined;
+  do {
+    const page = await env.IMAGES.list({ limit: 1000, cursor });
+    cursor = page.truncated ? page.cursor : undefined;
+
+    for (const stub of page.objects) {
+      result.scanned += 1;
+      try {
+        if (stub.httpMetadata?.cacheControl === IMAGE_CACHE_CONTROL) {
+          result.alreadyOk += 1;
+          continue;
+        }
+        const got = await env.IMAGES.get(stub.key);
+        if (!got) {
+          result.failures.push({ key: stub.key, error: 'get returned null' });
+          continue;
+        }
+        const body = await got.arrayBuffer();
+        await env.IMAGES.put(stub.key, body, {
+          httpMetadata: {
+            ...got.httpMetadata,
+            cacheControl: IMAGE_CACHE_CONTROL,
+          },
+          customMetadata: got.customMetadata,
+        });
+        result.rewritten += 1;
+        result.bytes += body.byteLength;
+      } catch (err) {
+        result.failures.push({ key: stub.key, error: (err as Error).message });
+      }
+    }
+  } while (cursor);
+
+  return result;
 }
 
 // ─── helpers ─────────────────────────────────────────────────────────

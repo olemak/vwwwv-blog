@@ -21,7 +21,7 @@ export function renderPost(opts: PostRenderOptions): string {
   // .feed scaffolding so styles match the home page exactly.
   const body = `
     <main class="feed" id="feed">
-      ${postCard(post, { index: 1, showReadingTime, open: true, eager: true })}
+      ${postCard(post, { index: 1, showReadingTime, open: true })}
     </main>
   `;
 

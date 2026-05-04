@@ -5,6 +5,7 @@ import { escapeHtml as e } from './escape';
 import { masthead, footer, type ActiveNav } from './components';
 import { tokensCss } from './tokens';
 import { wordmarkFaviconDataUri } from './wordmark';
+import { figureScript } from './figure-script';
 
 export interface PageOptions {
   title: string;
@@ -51,10 +52,10 @@ export function page(opts: PageOptions): string {
 <body>
   <div class="page">
     ${masthead({ activeNav, wordmarkVariant, edition })}
-    <hr class="rule-double" aria-hidden="true" style="margin-top: 28px;">
     ${body}
     ${footer()}
   </div>
+  <script>${figureScript}</script>
 </body>
 </html>`;
 }

@@ -17,7 +17,7 @@ import { handleAdminFlags } from '@vwwwv/flags';
 import type { Env } from '../env';
 import { flagsFor } from '../flags';
 import { authenticate, unauthorizedResponse } from './auth';
-import { uploadImage, deleteImage, listImages } from './images';
+import { uploadImage, deleteImage, listImages, backfillImageCacheControl } from './images';
 
 export async function handleApi(
   request: Request,
@@ -87,6 +87,15 @@ export async function handleApi(
     }
     if (request.method === 'POST') return uploadImageHandler(request, env);
     return methodNotAllowed();
+  }
+
+  // One-off admin operations on R2. Defined BEFORE the /api/images/:id
+  // pattern, otherwise the catch-all id matcher would route this here
+  // as a delete-by-id of an image with id="backfill-image-cache".
+  if (path === '/api/admin/backfill-image-cache') {
+    if (request.method !== 'POST') return methodNotAllowed();
+    const result = await backfillImageCacheControl(env);
+    return jsonResponse(result);
   }
 
   const imgMatch = path.match(/^\/api\/images\/([^/]+)\/?$/);

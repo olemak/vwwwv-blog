@@ -35,7 +35,7 @@ export function renderFeed(opts: FeedRenderOptions): string {
 
   const intro = tagFilter
     ? /* html */`
-      <section style="padding: 24px 0 12px">
+      <section style="padding: 24px var(--page-pad) 12px">
         <div class="meta" style="color: var(--poster-red); margin-bottom: 8px;">Filed under</div>
         <h1 style="font-size: clamp(40px, 6vw, 72px)">${e(tagFilter)}</h1>
         <p class="lead" style="margin-top: 14px;">${posts.length} entr${posts.length === 1 ? 'y' : 'ies'}.</p>
@@ -52,13 +52,7 @@ export function renderFeed(opts: FeedRenderOptions): string {
           ? `<p class="lead" style="padding: 32px 0;">Nothing here yet. ${tagFilter ? `Try another tag.` : `Drafts are state, not files — once one is published, it'll show up here.`}</p>`
           : posts
               .map((post, i) =>
-                postCard(post, {
-                  index: i + 1,
-                  showReadingTime,
-                  // First two posts are likely above the fold on mobile —
-                  // their images get fetchpriority=high to win the LCP race.
-                  eager: i < 2,
-                })
+                postCard(post, { index: i + 1, showReadingTime })
               )
               .join('\n')
       }

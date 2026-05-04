@@ -9,7 +9,9 @@ export const feedPageStyles = /* css */`
     padding: 28px 0 32px;
     position: relative;
   }
-  .post:first-child { padding-top: 8px; }
+  /* First post pushes right up against the masthead's bottom rule —
+     no top padding, no separator HR between header and image. */
+  .post:first-child { padding-top: 0; }
   .post:last-child  { border-bottom: 0; }
 
   .post__summary {
@@ -39,10 +41,14 @@ export const feedPageStyles = /* css */`
     container-name: postfig;
   }
 
+  /* Text-block insets — figure stays full-bleed, everything else gets
+     the gutter back. .page no longer pads, so each non-figure child of
+     .post claims its own padding-inline. */
   .post__title-wrap {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    padding-inline: var(--page-pad);
   }
   .post__kicker {
     font-family: var(--font-mono);
@@ -56,24 +62,28 @@ export const feedPageStyles = /* css */`
     line-height: 1.5;
     color: var(--ink);
     max-width: 64ch;
+    padding-inline: var(--page-pad);
   }
   .post__meta-row {
     display: flex;
     align-items: center;
     gap: 14px;
     flex-wrap: wrap;
-    padding-top: 8px;
+    padding: 8px var(--page-pad) 0;
   }
 
   .post[open] .post__summary { gap: 22px; }
   .post[open] .post__overlay-title { display: none; }
   .post[open] .post__title-expanded { display: flex; }
-  /* Expanded view: show the image at its natural ratio, no crop. */
-  .post[open] .figure--crop { aspect-ratio: auto; }
-  .post[open] .figure--crop .figure__media {
-    height: auto;
-    object-fit: initial;
-  }
+  /* Expanded view: figure adopts the image's natural aspect ratio,
+     transitioning from 21:9 via the rule in tokens. The custom property
+     is set inline by renderFeaturedFigure when img.width and img.height
+     are both known; if either is missing we fall back to 'auto' (snaps,
+     doesn't transition — but at least renders correctly). With the box
+     now matching the image's natural aspect, object-fit: cover behaves
+     identically to contain (no crop), so we can drop the old img-level
+     overrides that were doing the same thing manually. */
+  .post[open] .figure--crop { aspect-ratio: var(--natural-aspect, auto); }
   .post[open] .figure__overlay { display: none; }
 
   /* Figure caption only shows when the post is expanded — the cropped
@@ -98,7 +108,12 @@ export const feedPageStyles = /* css */`
     .post::details-content { transition: none; }
   }
 
-  .post__title-expanded { display: none; flex-direction: column; gap: 8px; padding-top: 6px; }
+  .post__title-expanded {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    padding: 6px var(--page-pad) 0;
+  }
 
   /* Container query: when the figure is mobile-narrow, drop the title
      overlay (it would overflow at small widths) and show the title in
@@ -111,7 +126,7 @@ export const feedPageStyles = /* css */`
   }
 
   .post__body {
-    padding-top: 22px;
+    padding: 22px var(--page-pad) 0;
     display: grid;
     grid-template-columns: minmax(0, 1fr) 220px;
     gap: 40px;

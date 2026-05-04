@@ -34,6 +34,10 @@ export function masthead({
         <a href="/tag"${cls('tag')}>Tag</a>
         <a href="/about"${cls('about')}>About</a>
       </nav>
+      <label class="slop-toggle" title="Load full-resolution AI images. Off by default — bytes are opt-in.">
+        <input type="checkbox" id="slop-toggle">
+        <span class="slop-toggle__label">Show slop</span>
+      </label>
     </header>
   `;
 }
@@ -93,10 +97,6 @@ export interface PostCardOptions {
   index: number;             // display number (1-based)
   showReadingTime: boolean;  // reading-time flag
   open?: boolean;            // start expanded?
-  /** Eager-load the featured image (skip loading=lazy, set fetchpriority=high).
-   *  Use for posts above the fold — typically the first 1–2 in the feed and
-   *  the only post on /post/<slug>. */
-  eager?: boolean;
 }
 
 export function postCard(
@@ -113,7 +113,7 @@ export function postCard(
   const readtime = opts.showReadingTime ? formatReadingTime(post.body) : null;
 
   const figureBlock = hasImage
-    ? renderFeaturedFigure(post, { eager: opts.eager === true })
+    ? renderFeaturedFigure(post, { open: opts.open === true })
     : '';
 
   const expandedTitleBlock = `
@@ -187,7 +187,7 @@ export function postCard(
 
 function renderFeaturedFigure(
   post: PostWithRelations,
-  { eager = false }: { eager?: boolean } = {}
+  { open = false }: { open?: boolean } = {}
 ): string {
   const img = post.featured_image!;
   const dateText = formatDateLong(post.published_at ?? post.created_at);
@@ -197,21 +197,39 @@ function renderFeaturedFigure(
     img.source_type === 'screenshot' ? ' figure--screenshot' : '';
   const alt = img.alt ?? post.title;
 
-  // Above-the-fold images load eagerly with fetchpriority=high so the LCP
-  // candidate is discovered immediately. Below-the-fold images keep
-  // loading=lazy to skip the request entirely until the user scrolls.
-  const loadingAttrs = eager
-    ? `fetchpriority="high" decoding="async"`
-    : `loading="lazy" decoding="async"`;
+  // Halftone proof — a tiny 80w version of the image is loaded by CSS
+  // (background-image: var(--lqip)) and rendered with image-rendering:
+  // pixelated + grayscale + boosted contrast. Reads as a wireservice
+  // plate proof, on-brand for the brutalist propaganda aesthetic. The
+  // real image is gated on user action (open the post, or toggle the
+  // global "Drop the plate" control) — AI imagery is opt-in by design.
+  const lqipUrl = imageUrl(img.r2_key, 80);
+
+  // Inline both --natural-aspect (for the open-state aspect transition)
+  // and --lqip (for the placeholder background) on the figure element.
+  const styleAttr =
+    img.width && img.height
+      ? ` style="--natural-aspect: ${img.width} / ${img.height}; --lqip: url('${escapeAttr(lqipUrl)}')"`
+      : ` style="--lqip: url('${escapeAttr(lqipUrl)}')"`;
+
+  // Branch on whether the post is server-side open. On /post/<slug> the
+  // post renders [open], so we emit the real src/srcset directly — no JS
+  // dance needed for that case. In the feed (collapsed by default) we
+  // emit data-src/data-srcset; the inline figure script swaps them in
+  // when the user opens a post or trips the global toggle.
+  const realSrc = imageUrl(img.r2_key, Math.min(1200, img.width ?? 1200));
+  const realSrcset = imageSrcset(img.r2_key, img.width);
+  const imgSourceAttrs = open
+    ? `src="${escapeAttr(realSrc)}" srcset="${escapeAttr(realSrcset)}"`
+    : `data-src="${escapeAttr(realSrc)}" data-srcset="${escapeAttr(realSrcset)}"`;
 
   return /* html */`
-    <figure class="figure figure--crop${sourceCls}" data-vt-media="m-${escapeAttr(post.id)}">
+    <figure class="figure figure--crop${sourceCls}"${styleAttr} data-vt-media="m-${escapeAttr(post.id)}">
       <img class="figure__media"
-           src="${escapeAttr(imageUrl(img.r2_key, 1024))}"
-           srcset="${escapeAttr(imageSrcset(img.r2_key))}"
-           sizes="(max-width: 760px) calc(100vw - 40px), min(1024px, 100vw - 112px)"
+           ${imgSourceAttrs}
+           sizes="(max-width: 1140px) 100vw, 1140px"
            alt="${escapeAttr(alt)}"
-           ${loadingAttrs}
+           decoding="async"
            ${img.width ? `width="${img.width}"` : ''} ${img.height ? `height="${img.height}"` : ''}>
       <div class="figure__overlay">
         <div class="post__overlay-title">
@@ -245,11 +263,49 @@ function imageUrl(r2Key: string, width?: number): string {
   return `${IMAGE_BASE}/cdn-cgi/image/width=${width},format=auto,fit=scale-down,quality=85/${r2Key}`;
 }
 
-function imageSrcset(
-  r2Key: string,
-  widths: readonly number[] = [400, 600, 800, 1200, 1600]
-): string {
-  return widths.map((w) => `${imageUrl(r2Key, w)} ${w}w`).join(', ');
+// Srcset rungs walk an arithmetic progression at multiples of 320 CSS px:
+// 320, 640, 960, 1280, 1600, 1920, 2240, … The base unit honours the
+// smallest viewport widths still in real use (boring-phone / Light Phone
+// class at 280–320 CSS px, 1× DPR), and each subsequent step lines up
+// neatly with common device-pixel demands:
+//
+//   320  → 280 × 1 (boring phone) and 320 × 1 (1× small windows)
+//   640  → 320 × 2 (iPhone 5 / SE 1st gen)
+//   960  → 360–428 × 2 (every 2× phone in the modern wild) AND
+//          360 × 2.625 (Lighthouse mobile emulation)
+//   1280 → 414 × 3 (iPhone Pro Max class)
+//   1600 → 768 × 2 (iPad portrait)
+//   1920 → 960 × 2 (FHD-ish 2× laptops)
+//   2240 → 1140 × ≈2 (desktop retina at the .page max-width cap)
+//
+// The ladder grows by +320 per step and stops the first time it would
+// match-or-exceed the source width — anything bigger is wasted bytes
+// since Cloudflare's scale-down won't upscale, and labelling a delivered
+// 1584w as "2400w" would just lie to the browser's resolution picker.
+// The exact source width is then appended as the final entry so the
+// largest available rung honestly matches the largest deliverable image.
+
+const STEP = 320;
+
+/** Safety-pin set used when an image's width is missing from the DB. We
+ *  can't compute the cap, so emit a fixed five-rung ladder that covers
+ *  the AI-image-class sources we know we have. If the actual source is
+ *  smaller, requests beyond it get the source-untouched-with-wrong-label
+ *  treatment — wasteful but not broken. Better than emitting nothing. */
+const FALLBACK_WIDTHS = [320, 640, 960, 1280, 1600] as const;
+
+function imageSrcset(r2Key: string, sourceWidth?: number | null): string {
+  if (!sourceWidth) {
+    return FALLBACK_WIDTHS.map((w) => `${imageUrl(r2Key, w)} ${w}w`).join(', ');
+  }
+  const rungs: number[] = [];
+  for (let w = STEP; w < sourceWidth; w += STEP) {
+    rungs.push(w);
+  }
+  // Append the exact source width so the topmost descriptor is honest
+  // and desktop-retina viewers get the maximum native quality available.
+  rungs.push(sourceWidth);
+  return rungs.map((w) => `${imageUrl(r2Key, w)} ${w}w`).join(', ');
 }
 
 function extractFirstParagraph(body: string): string {
