@@ -69,7 +69,7 @@ const aboutStyles = /* css */`
   .about-hero .lead { margin-top: 18px; font-size: 22px; line-height: 1.4; max-width: 32em; color: var(--ink); }
 
   .about-grid { display: grid; grid-template-columns: 1fr 220px; gap: 48px; padding-top: 22px; }
-  @media (max-width: 760px) { .about-grid { grid-template-columns: 1fr; } }
+  @media (width <= 760px) { .about-grid { grid-template-columns: 1fr; } }
 
   .about-prose { font-size: 17px; line-height: 1.62; color: var(--ink); }
   .about-prose p { margin: 0 0 1em; text-wrap: pretty; }

@@ -2,13 +2,14 @@
 // Server-renders all posts as <details> elements; feed.js handles the
 // View-Transitions choreography on the client.
 
-import type { PostWithRelations } from '@vwwwv/db';
+import type { Image, PostWithRelations } from '@vwwwv/db';
 import { page } from './layout';
 import { postCard } from './components';
 import type { ActiveNav } from './components';
 import { escapeHtml as e } from './escape';
 import { formatEditionLine } from './date';
 import { feedPageStyles } from './feed-styles';
+import { renderMarkdown } from './markdown';
 
 export interface FeedRenderOptions {
   posts: PostWithRelations[];
@@ -16,10 +17,14 @@ export interface FeedRenderOptions {
   wordmarkVariant: string;
   /** When set, this is a tag-filtered view; affects title and intro copy. */
   tagFilter?: string;
+  /** Pre-resolved Image records referenced from any of the posts'
+   *  bodies, keyed by id. Same map is passed to every postCard; the
+   *  per-image lookup happens by id so unused records are harmless. */
+  bodyImages?: Map<string, Image>;
 }
 
 export function renderFeed(opts: FeedRenderOptions): string {
-  const { posts, showReadingTime, wordmarkVariant, tagFilter } = opts;
+  const { posts, showReadingTime, wordmarkVariant, tagFilter, bodyImages } = opts;
 
   const title = tagFilter
     ? `${tagFilter} — vwwwv`
@@ -52,7 +57,11 @@ export function renderFeed(opts: FeedRenderOptions): string {
           ? `<p class="lead" style="padding: 32px 0;">Nothing here yet. ${tagFilter ? `Try another tag.` : `Drafts are state, not files — once one is published, it'll show up here.`}</p>`
           : posts
               .map((post, i) =>
-                postCard(post, { index: i + 1, showReadingTime })
+                postCard(post, {
+                  index: i + 1,
+                  showReadingTime,
+                  proseHtml: renderMarkdown(post.body, { images: bodyImages }),
+                })
               )
               .join('\n')
       }

@@ -233,6 +233,11 @@ export const tokensCss = /* css */`
   .figure__overlay {
     position: absolute;
     inset: auto 0 0 0;
+    /* Stacks above .figure__media (z-index 1) so the title remains
+       legible whether the image is in halftone state or fully loaded.
+       The halftone via figure::before sits at z-index 0; the loaded
+       image at 1; the title overlay at 2; the trigger toggle at 3. */
+    z-index: 2;
     padding: clamp(14px, 4vw, 28px);
     background: linear-gradient(
       to top,
@@ -343,13 +348,18 @@ export const tokensCss = /* css */`
   .masthead__nav a.is-active { color: var(--poster-red); }
   .masthead__nav a:hover { text-decoration: none; color: var(--poster-red); }
 
-  /* "Show slop" — global opt-in for the AI imagery. The default state
-     is the halftone proof; checking the box swaps every figure on the
-     page to its full-resolution AI image and persists the choice in
-     localStorage. The label says what it does (slop, plainly) and the
-     editorial stance; the hairline border + monospace keep it part of
-     the masthead chrome rather than a UI flourish. */
-  .slop-toggle {
+  /* Per-image consent overlay. Sits absolute, top-right of every gated
+     figure (i.e. one whose data-triggers attribute is non-empty). The
+     label is generated server-side from the image's triggers — "Show
+     slop", "Show slop and spiders" — so the editorial register is the
+     same as the post argues for. Paper-cream background with ink border
+     keeps it legible on top of both the halftone and the loaded image,
+     no matter what colours the underlying figure has. */
+  .figure-trigger-toggle {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 3;
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -360,11 +370,12 @@ export const tokensCss = /* css */`
     letter-spacing: .12em;
     text-transform: uppercase;
     color: var(--ink-soft);
+    background: var(--paper-cream);
     padding: 6px 10px;
     border: 2px solid var(--ink);
     line-height: 1;
   }
-  .slop-toggle input[type="checkbox"] {
+  .figure-trigger-toggle__input {
     appearance: none;
     -webkit-appearance: none;
     width: 12px;
@@ -376,13 +387,167 @@ export const tokensCss = /* css */`
     display: inline-block;
     vertical-align: middle;
   }
-  .slop-toggle input[type="checkbox"]:checked {
+  .figure-trigger-toggle__input:checked {
     background: var(--poster-red);
     border-color: var(--poster-red);
   }
-  .slop-toggle:hover { color: var(--ink); }
-  /* When the plate is dropped, surface that in the label colour too. */
-  :root[data-slop="on"] .slop-toggle { color: var(--poster-red); border-color: var(--poster-red); }
+  .figure-trigger-toggle:hover { color: var(--ink); }
+  /* When the per-image opt-in is checked, push the whole control toward
+     the active colour so the state reads at a glance from across the page. */
+  .figure-trigger-toggle:has(.figure-trigger-toggle__input:checked) {
+    color: var(--poster-red);
+    border-color: var(--poster-red);
+  }
+
+  /* Consent tab and panel — the persistent surface for category-level
+     "always show X" preferences. The tab sits fixed at the bottom-right
+     of the viewport, peeking up from the edge like the corner of a
+     printed insert. The panel uses the native HTML popover API: the
+     browser handles open/close, ESC dismissal, click-outside-to-close,
+     and focus management. CSS keeps the panel offscreen until popover-open. */
+  .consent-tab {
+    position: fixed;
+    bottom: 0;
+    right: var(--page-pad);
+    z-index: 10;
+    background: var(--paper-cream);
+    color: var(--ink);
+    border: 2px solid var(--ink);
+    border-bottom: 0;
+    padding: 8px 14px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .consent-tab:hover {
+    background: var(--ink);
+    color: var(--paper-cream);
+  }
+  /* When the user has any category opted in, surface that on the tab so
+     the reader can see at a glance that the consent state is non-default. */
+  :root[data-consent-active="true"] .consent-tab {
+    color: var(--poster-red);
+    border-color: var(--poster-red);
+  }
+
+  /* Nudge animation: when a user toggles a per-image opt-in, the tab
+     bounces briefly to draw attention to the persistent surface. The
+     pattern teaches "you've done this once; if you do it twice, you
+     can make it a default." Subtle, ~600ms, doesn't repeat unless a
+     new toggle event re-triggers it. */
+  @media (prefers-reduced-motion: no-preference) {
+    @keyframes consent-tab-nudge {
+      0%, 100% { transform: translateY(0); }
+      20%      { transform: translateY(-6px); }
+      40%      { transform: translateY(0); }
+      60%      { transform: translateY(-3px); }
+      80%      { transform: translateY(0); }
+    }
+    .consent-tab.is-nudging {
+      animation: consent-tab-nudge 0.6s cubic-bezier(.7, 0, .2, 1);
+    }
+  }
+
+  .consent-panel {
+    /* Native popover positioning: top-layer when open, no margin/padding
+       reset by the browser. We anchor it to the bottom of the viewport
+       so it reads as a strip of paper sliding up from the edge. */
+    position: fixed;
+    inset: auto 0 0 0;
+    margin: 0;
+    border: 0;
+    border-top: 6px solid var(--ink);
+    background: var(--paper-cream);
+    color: var(--ink);
+    padding: 28px var(--page-pad) 32px;
+    max-height: 60vh;
+    overflow-y: auto;
+    /* Brutalist double-rule, like the rest of the chrome. */
+    box-shadow: 0 -10px 0 -8px var(--ink) inset;
+  }
+  .consent-panel__title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 22px;
+    color: var(--poster-red);
+    margin: 0 0 8px;
+  }
+  .consent-panel__intro {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    max-width: 64ch;
+    margin: 0 0 20px;
+  }
+  .consent-panel__list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .consent-panel__item label {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--ink);
+    padding: 8px 12px;
+    border: 2px solid var(--ink);
+    line-height: 1.2;
+  }
+  .consent-panel__item label:hover {
+    background: var(--paper-cream-deep);
+  }
+  .consent-panel__input {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--ink);
+    background: transparent;
+    cursor: pointer;
+    margin: 0;
+    flex-shrink: 0;
+  }
+  .consent-panel__input:checked {
+    background: var(--poster-red);
+    border-color: var(--poster-red);
+  }
+  .consent-panel__item label:has(.consent-panel__input:checked) {
+    color: var(--poster-red);
+    border-color: var(--poster-red);
+  }
+
+  /* Reduced-motion: skip the slide. The popover snaps in/out instead. */
+  @media (prefers-reduced-motion: no-preference) {
+    .consent-panel {
+      transition: transform 0.3s cubic-bezier(.7, 0, .2, 1),
+                  opacity 0.3s cubic-bezier(.7, 0, .2, 1),
+                  overlay 0.3s allow-discrete,
+                  display 0.3s allow-discrete;
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    .consent-panel:popover-open {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    @starting-style {
+      .consent-panel:popover-open {
+        transform: translateY(100%);
+        opacity: 0;
+      }
+    }
+  }
 
   /* Footer */
   .foot {

@@ -299,6 +299,24 @@ export async function getAuthorBySubdomain(
 
 // ─── Images ──────────────────────────────────────────────────────────
 
+// Raw row shape — `triggers` lives in SQLite as a comma-separated TEXT
+// column. The public Image type exposes it as a parsed string[] so
+// consumers don't have to think about encoding. mapImageRow does the
+// translation in both directions for createImage / read paths.
+interface ImageRow extends Omit<Image, 'triggers'> {
+  triggers: string | null;
+}
+
+function mapImageRow(row: ImageRow): Image {
+  return {
+    ...row,
+    triggers:
+      row.triggers && row.triggers.length > 0
+        ? row.triggers.split(',').map((t) => t.trim()).filter(Boolean)
+        : [],
+  };
+}
+
 export interface CreateImageInput {
   id: string;
   filename: string;
@@ -309,14 +327,21 @@ export interface CreateImageInput {
   height?: number | null;
   bytes?: number | null;
   source_type?: ImageSourceType | null;
+  /** Content-category triggers. Stored as a comma-separated string;
+   *  pass an empty array (or omit) for no triggers. */
+  triggers?: string[];
 }
 
 export async function createImage(db: DB, input: CreateImageInput): Promise<void> {
+  const triggersValue =
+    input.triggers && input.triggers.length > 0
+      ? input.triggers.join(',')
+      : null;
   await db
     .prepare(
       `INSERT INTO images
-         (id, filename, r2_key, alt, caption, width, height, bytes, source_type)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+         (id, filename, r2_key, alt, caption, width, height, bytes, source_type, triggers)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .bind(
       input.id,
@@ -327,13 +352,18 @@ export async function createImage(db: DB, input: CreateImageInput): Promise<void
       input.width ?? null,
       input.height ?? null,
       input.bytes ?? null,
-      input.source_type ?? null
+      input.source_type ?? null,
+      triggersValue
     )
     .run();
 }
 
 export async function getImage(db: DB, id: string): Promise<Image | null> {
-  return db.prepare(`SELECT * FROM images WHERE id = ?`).bind(id).first<Image>();
+  const row = await db
+    .prepare(`SELECT * FROM images WHERE id = ?`)
+    .bind(id)
+    .first<ImageRow>();
+  return row ? mapImageRow(row) : null;
 }
 
 export async function listImages(
@@ -345,8 +375,64 @@ export async function listImages(
   const { results } = await db
     .prepare(`SELECT * FROM images ORDER BY uploaded_at DESC LIMIT ? OFFSET ?`)
     .bind(limit, offset)
-    .all<Image>();
-  return results;
+    .all<ImageRow>();
+  return results.map(mapImageRow);
+}
+
+/** Batch-fetch images by primary key. Returns a Map keyed by id;
+ *  missing ids are simply absent from the map. */
+export async function getImagesByIds(
+  db: DB,
+  ids: readonly string[]
+): Promise<Map<string, Image>> {
+  if (ids.length === 0) return new Map();
+  const placeholders = ids.map(() => '?').join(',');
+  const { results } = await db
+    .prepare(`SELECT * FROM images WHERE id IN (${placeholders})`)
+    .bind(...ids)
+    .all<ImageRow>();
+  const map = new Map<string, Image>();
+  for (const row of results) {
+    const img = mapImageRow(row);
+    map.set(img.id, img);
+  }
+  return map;
+}
+
+/** Resolve a batch of image references — either by primary key (the
+ *  preferred `image:<id>` form in markdown) or by r2_key (the legacy
+ *  full-URL form). Returns a single Map keyed by id; the caller can
+ *  look up either way because both lookup paths converge on Image
+ *  records keyed by their id. Used by the markdown renderer's pre-
+ *  resolution pass to avoid N+1 D1 queries. */
+export async function resolveImageRefs(
+  db: DB,
+  refs: { ids: readonly string[]; r2Keys: readonly string[] }
+): Promise<Map<string, Image>> {
+  const map = new Map<string, Image>();
+  if (refs.ids.length === 0 && refs.r2Keys.length === 0) return map;
+
+  const conditions: string[] = [];
+  const binds: unknown[] = [];
+  if (refs.ids.length > 0) {
+    conditions.push(`id IN (${refs.ids.map(() => '?').join(',')})`);
+    binds.push(...refs.ids);
+  }
+  if (refs.r2Keys.length > 0) {
+    conditions.push(`r2_key IN (${refs.r2Keys.map(() => '?').join(',')})`);
+    binds.push(...refs.r2Keys);
+  }
+
+  const { results } = await db
+    .prepare(`SELECT * FROM images WHERE ${conditions.join(' OR ')}`)
+    .bind(...binds)
+    .all<ImageRow>();
+
+  for (const row of results) {
+    const img = mapImageRow(row);
+    map.set(img.id, img);
+  }
+  return map;
 }
 
 export async function deleteImage(db: DB, id: string): Promise<void> {
@@ -391,8 +477,13 @@ async function loadRelationsBatch(
     const imgResult = await db
       .prepare(`SELECT * FROM images WHERE id IN (${imgPlaceholders})`)
       .bind(...imageIds)
-      .all<Image>();
-    imagesById = new Map(imgResult.results.map((img) => [img.id, img]));
+      .all<ImageRow>();
+    imagesById = new Map(
+      imgResult.results.map((row) => {
+        const img = mapImageRow(row);
+        return [img.id, img];
+      })
+    );
   }
 
   return rows.map((row) => ({

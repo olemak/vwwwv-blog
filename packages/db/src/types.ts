@@ -41,6 +41,11 @@ export interface Image {
   height: number | null;
   bytes: number | null;
   source_type: ImageSourceType | null;
+  /** Content-category triggers this image trips. Drives per-image opt-in
+   *  gating in the render layer. Empty array = no triggers, no gating.
+   *  Stored in the DB as a comma-separated TEXT column; mappers split
+   *  on read and join on write so consumers never see the raw string. */
+  triggers: string[];
   uploaded_at: number;
 }
 

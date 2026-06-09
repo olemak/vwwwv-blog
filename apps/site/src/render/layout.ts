@@ -2,7 +2,7 @@
 // inline page-specific styles, then hands them to `page()` for the shell.
 
 import { escapeHtml as e } from './escape';
-import { masthead, footer, type ActiveNav } from './components';
+import { masthead, footer, consentTab, consentPanel, type ActiveNav } from './components';
 import { tokensCss } from './tokens';
 import { wordmarkFaviconDataUri } from './wordmark';
 import { figureScript } from './figure-script';
@@ -55,6 +55,8 @@ export function page(opts: PageOptions): string {
     ${body}
     ${footer()}
   </div>
+  ${consentTab()}
+  ${consentPanel()}
   <script>${figureScript}</script>
 </body>
 </html>`;

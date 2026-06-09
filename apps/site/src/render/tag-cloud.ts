@@ -198,7 +198,7 @@ const tagStyles = /* css */`
   }
   .section-head h2 { font-size: 28px; }
   .section-head .meta { color: var(--poster-red); }
-  @media (max-width: 720px) {
+  @media (width <= 720px) {
     .tag-list { grid-template-columns: 1fr; gap: 4px; }
     .tag-list__read { text-align: left; }
   }

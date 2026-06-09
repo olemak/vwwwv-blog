@@ -11,7 +11,29 @@ import { renderFeed } from './render/feed';
 import { renderAbout } from './render/about';
 import { renderTagCloud } from './render/tag-cloud';
 import { renderPost } from './render/post';
+import { extractImageRefs } from './render/markdown';
 import { handleApi } from './publish/handlers';
+
+/** Walk every post body, collect image references, batch-resolve through
+ *  D1. Used by the feed and post-page handlers so the markdown renderer
+ *  can route inline image references through the figure component
+ *  without per-image queries. */
+async function resolveBodyImagesFor(
+  env: Env,
+  posts: readonly PostWithRelations[]
+) {
+  const allIds = new Set<string>();
+  const allR2Keys = new Set<string>();
+  for (const post of posts) {
+    const refs = extractImageRefs(post.body);
+    for (const id of refs.ids) allIds.add(id);
+    for (const k of refs.r2Keys) allR2Keys.add(k);
+  }
+  return queries.resolveImageRefs(env.DB, {
+    ids: [...allIds],
+    r2Keys: [...allR2Keys],
+  });
+}
 
 const HTML_HEADERS: HeadersInit = {
   'Content-Type': 'text/html; charset=utf-8',
@@ -71,10 +93,12 @@ export async function route(
 async function handleFeedHome(request: Request, env: Env): Promise<Response> {
   const flags = await loadFlags(env, request);
   const posts = await queries.listPosts(env.DB, { limit: 50 });
+  const bodyImages = await resolveBodyImagesFor(env, posts);
   const html = renderFeed({
     posts,
     showReadingTime: flags.readingTime,
     wordmarkVariant: flags.wordmarkVariant,
+    bodyImages,
   });
   return new Response(html, { headers: HTML_HEADERS });
 }
@@ -122,11 +146,13 @@ async function handleTagFilter(
 ): Promise<Response> {
   const flags = await loadFlags(env, request);
   const posts = await queries.listPosts(env.DB, { tag: tagName, limit: 50 });
+  const bodyImages = await resolveBodyImagesFor(env, posts);
   const html = renderFeed({
     posts,
     showReadingTime: flags.readingTime,
     wordmarkVariant: flags.wordmarkVariant,
     tagFilter: tagName,
+    bodyImages,
   });
   return new Response(html, { headers: HTML_HEADERS });
 }
@@ -139,11 +165,13 @@ async function handlePostPage(
   const flags = await loadFlags(env, request);
   const post = await queries.getPostBySlug(env.DB, slug);
   if (!post) return new Response('Not Found', { status: 404 });
+  const bodyImages = await resolveBodyImagesFor(env, [post]);
   const html = renderPost({
     post,
     showReadingTime: flags.readingTime,
     wordmarkVariant: flags.wordmarkVariant,
     siteUrl: env.SITE_URL,
+    bodyImages,
   });
   return new Response(html, { headers: HTML_HEADERS });
 }

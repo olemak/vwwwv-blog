@@ -29,6 +29,12 @@ export interface UploadImageInput {
   source_type?: ImageSourceType | null;
   width?: number | null;
   height?: number | null;
+  /** Content-category triggers — typically ['slop'] for AI-generated
+   *  images, ['spider'] for arachnid photographs, or compound values
+   *  like ['slop','spider'] when both apply. Drives per-image opt-in
+   *  gating in the render layer. Defaults applied below: source_type
+   *  'ai-generated' implies 'slop' if no explicit triggers are passed. */
+  triggers?: string[];
 }
 
 export interface UploadImageResult {
@@ -44,6 +50,17 @@ export async function uploadImage(
 ): Promise<UploadImageResult> {
   if (!input.filename) throw new Error('filename required');
   if (!input.content_base64) throw new Error('content_base64 required');
+  // The figure component depends on width and height for layout
+  // reservation, --natural-aspect calculation, and the [open] aspect-
+  // ratio transition. Reject uploads that don't supply them — the
+  // publish skill is expected to read these from the file before
+  // submitting. Catching it here means the failure mode is "your
+  // upload errored" instead of "your post renders as a narrow bar".
+  if (input.width == null || input.height == null) {
+    throw new Error(
+      'width and height are required — read them from the file (e.g. `sips -g pixelWidth -g pixelHeight`) before uploading'
+    );
+  }
 
   const bytes = base64ToBytes(input.content_base64);
   const id = ulid();
@@ -62,6 +79,15 @@ export async function uploadImage(
     httpMetadata: { contentType, cacheControl: IMAGE_CACHE_CONTROL },
   });
 
+  // If the caller didn't pass explicit triggers, infer 'slop' from
+  // source_type='ai-generated'. The skill prompt encourages explicit
+  // triggers (so a real photograph of a spider gets ['spider'] without
+  // also being marked 'slop'), but the fallback covers the common case
+  // of AI uploads that only set source_type.
+  const inferredTriggers =
+    input.triggers ??
+    (input.source_type === 'ai-generated' ? ['slop'] : []);
+
   await queries.createImage(env.DB, {
     id,
     filename: safeName,
@@ -72,6 +98,7 @@ export async function uploadImage(
     height: input.height ?? null,
     bytes: bytes.byteLength,
     source_type: input.source_type ?? 'upload',
+    triggers: inferredTriggers,
   });
 
   return {

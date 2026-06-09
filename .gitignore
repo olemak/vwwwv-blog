@@ -28,3 +28,5 @@ apps/site/wrangler.toml
 *.png
 *.gif
 *.bmp
+# Claude Code local session state / worktrees
+.claude/

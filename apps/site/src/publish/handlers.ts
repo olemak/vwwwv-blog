@@ -8,8 +8,8 @@
 //   /api/posts/:slug/revisions          GET
 //   /api/posts/:slug/revert             POST  body: { revision_id }
 //   /api/drafts                         GET — shortcut for ?status=draft
-//   /api/images                         GET, POST (upload)
-//   /api/images/:id                     DELETE
+//   /api/images                         GET (list), POST (upload)
+//   /api/images/:id                     GET, DELETE
 //   /api/flags/...                      delegated to @vwwwv/flags admin
 
 import { queries, ulid, slugify, type PostStatus } from '@vwwwv/db';
@@ -100,9 +100,16 @@ export async function handleApi(
 
   const imgMatch = path.match(/^\/api\/images\/([^/]+)\/?$/);
   if (imgMatch?.[1]) {
-    if (request.method !== 'DELETE') return methodNotAllowed();
-    const ok = await deleteImage(env, decodeURIComponent(imgMatch[1]));
-    return new Response(null, { status: ok ? 204 : 404 });
+    const id = decodeURIComponent(imgMatch[1]);
+    if (request.method === 'GET') {
+      const img = await queries.getImage(env.DB, id);
+      return img ? jsonResponse(img) : new Response('Not Found', { status: 404 });
+    }
+    if (request.method === 'DELETE') {
+      const ok = await deleteImage(env, id);
+      return new Response(null, { status: ok ? 204 : 404 });
+    }
+    return methodNotAllowed();
   }
 
   return new Response('Not Found', { status: 404 });

@@ -8,9 +8,9 @@ export const feedPageStyles = /* css */`
     border-bottom: 2px solid var(--ink);
     padding: 28px 0 32px;
     position: relative;
+    container-type: inline-size;
+    container-name: postbody;
   }
-  /* First post pushes right up against the masthead's bottom rule —
-     no top padding, no separator HR between header and image. */
   .post:first-child { padding-top: 0; }
   .post:last-child  { border-bottom: 0; }
 
@@ -33,7 +33,7 @@ export const feedPageStyles = /* css */`
     color: var(--poster-red);
     line-height: 1;
   }
-  @media (max-width: 1240px) { .post__index { display: none; } }
+  @media (width <= 1240px) { .post__index { display: none; } }
 
   .post__figure {
     position: relative;
@@ -41,9 +41,6 @@ export const feedPageStyles = /* css */`
     container-name: postfig;
   }
 
-  /* Text-block insets — figure stays full-bleed, everything else gets
-     the gutter back. .page no longer pads, so each non-figure child of
-     .post claims its own padding-inline. */
   .post__title-wrap {
     display: flex;
     flex-direction: column;
@@ -75,25 +72,45 @@ export const feedPageStyles = /* css */`
   .post[open] .post__summary { gap: 22px; }
   .post[open] .post__overlay-title { display: none; }
   .post[open] .post__title-expanded { display: flex; }
-  /* Expanded view: figure adopts the image's natural aspect ratio,
-     transitioning from 21:9 via the rule in tokens. The custom property
-     is set inline by renderFeaturedFigure when img.width and img.height
-     are both known; if either is missing we fall back to 'auto' (snaps,
-     doesn't transition — but at least renders correctly). With the box
-     now matching the image's natural aspect, object-fit: cover behaves
-     identically to contain (no crop), so we can drop the old img-level
-     overrides that were doing the same thing manually. */
-  .post[open] .figure--crop { aspect-ratio: var(--natural-aspect, auto); }
+  .post[open] .figure--crop { aspect-ratio: var(--natural-aspect, 21 / 9); }
   .post[open] .figure__overlay { display: none; }
 
-  /* Figure caption only shows when the post is expanded — the cropped
-     thumbnail in the feed view doesn't need it. */
-  .post:not([open]) .figure-caption { display: none; }
+  .post:not([open]) .post__summary > .figure-caption { display: none; }
 
-  /* Smooth open/close animation for the native <details> toggle.
-     Uses ::details-content (Chrome 131+, recent Safari/Firefox) plus
-     interpolate-size to interpolate between block-size: 0 and block-size: auto.
-     Older browsers gracefully fall back to instant open/close. */
+  /* Inline figures use an inner .figure__plate wrapper that holds the
+     aspect-ratio'd image area; the figcaption sits as a sibling of the
+     plate, outside the constrained box, so it can't be clipped by the
+     plate's overflow:hidden (needed for the halftone). */
+  .figure--inline {
+    background: transparent;
+    overflow: visible;
+  }
+  .figure--inline::before { content: none; }
+  .figure--inline .figure__plate {
+    position: relative;
+    aspect-ratio: var(--natural-aspect, auto);
+    background: var(--paper-cream-deep);
+    overflow: hidden;
+  }
+  .figure--inline .figure__plate::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: var(--lqip);
+    background-size: cover;
+    background-position: center;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    image-rendering: pixelated;
+    filter: grayscale(1) contrast(1.3);
+    z-index: 0;
+  }
+  .figure--inline > .figure-caption {
+    display: flex;
+    margin-top: 8px;
+    padding-inline: 0;
+  }
+
   .post::details-content {
     block-size: 0;
     overflow: hidden;
@@ -115,34 +132,51 @@ export const feedPageStyles = /* css */`
     padding: 6px var(--page-pad) 0;
   }
 
-  /* Container query: when the figure is mobile-narrow, drop the title
-     overlay (it would overflow at small widths) and show the title in
-     normal flow below the cropped image. Container query, not media
-     query — the figure's container is what matters, not the viewport. */
-  @container postfig (max-width: 480px) {
+  @container postfig (width <= 480px) {
     .post__overlay-title { display: none; }
     .figure__overlay { display: none; }
     .post__title-expanded { display: flex; }
   }
 
   .post__body {
-    padding: 22px var(--page-pad) 0;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 220px;
-    gap: 40px;
-  }
-  @media (max-width: 760px) {
-    .post__body { grid-template-columns: 1fr; gap: 18px; }
-  }
-
-  .post__prose {
+    padding-top: 22px;
     font-size: 17px;
     line-height: 1.62;
     color: var(--ink);
-    max-width: 68ch;
   }
-  .post__prose p { margin: 0 0 1em; text-wrap: pretty; }
-  .post__prose p:first-child::first-letter {
+  .post__body > *:where(:not(.post__sidebar)) {
+    grid-column: prose-start / prose-end;
+    padding-inline: var(--page-pad);
+    max-width: 72ch;
+    margin-inline: auto;
+  }
+  .post__body > figure {
+    grid-column: bleed-start / bleed-end;
+    padding-inline: 0;
+    max-width: none;
+    margin: 18px 0;
+  }
+  .post__body > .figure--prose      { grid-column: prose-start / prose-end; grid-row: span 2; }
+  .post__body > .figure--prose-wide { grid-column: prose-start / aside-end; }
+  .post__body > .figure--small      { grid-column: aside-start / aside-end; grid-row: span 2; }
+
+  @container postbody (width >= 1000px) {
+    .post__body {
+      display: grid;
+      grid-template-columns:
+        [bleed-start] minmax(var(--page-pad), 1fr)
+        [prose-start] min(72ch, 100%) [prose-end]
+        40px
+        [aside-start] 220px [aside-end]
+        minmax(var(--page-pad), 1fr) [bleed-end];
+    }
+    .post__body > *      { padding-inline: 0; max-width: none; margin-inline: 0; }
+    .post__body > figure { margin: 0; }
+    .post__sidebar       { padding: 0; }
+  }
+
+  .post__body > p { margin: 0 0 1em; text-wrap: pretty; }
+  .post__body > p:first-of-type::first-letter {
     font-family: var(--font-display);
     font-weight: 700;
     font-size: 4.2em;
@@ -151,7 +185,7 @@ export const feedPageStyles = /* css */`
     padding: 4px 10px 0 0;
     color: var(--poster-red);
   }
-  .post__prose blockquote {
+  .post__body > blockquote {
     margin: 1.2em 0;
     padding: 4px 0 4px 18px;
     border-left: 4px solid var(--poster-red);
@@ -159,16 +193,16 @@ export const feedPageStyles = /* css */`
     font-size: .92em;
     color: var(--ink);
   }
-  .post__prose blockquote p { margin: 0 0 .6em; }
-  .post__prose blockquote p:last-child { margin-bottom: 0; }
-  .post__prose code {
+  .post__body > blockquote p { margin: 0 0 .6em; }
+  .post__body > blockquote p:last-child { margin-bottom: 0; }
+  .post__body code {
     font-family: var(--font-mono);
     background: var(--paper-cream-deep);
     padding: 1px 5px;
     border: 1px solid var(--ink);
     font-size: .9em;
   }
-  .post__prose pre {
+  .post__body > pre {
     background: var(--ink);
     color: var(--paper-cream);
     padding: 16px;
@@ -176,41 +210,35 @@ export const feedPageStyles = /* css */`
     font-size: 14px;
     line-height: 1.5;
   }
-  .post__prose pre code {
+  .post__body > pre code {
     background: transparent;
     border: 0;
     padding: 0;
     font-size: inherit;
     color: inherit;
   }
-  .post__prose hr { border: 0; border-top: 2px solid var(--ink); margin: 24px 0; }
-  .post__prose h2 {
+  .post__body > hr { border: 0; border-top: 2px solid var(--ink); margin: 24px 0; }
+  .post__body > :is(h2, h3) {
     font-family: var(--font-display);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .02em;
-    font-size: 26px;
     color: var(--ink);
-    margin: 32px 0 10px;
   }
-  .post__prose h3 {
-    font-family: var(--font-display);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .02em;
-    font-size: 22px;
-    color: var(--ink);
-    margin: 28px 0 8px;
-  }
-  .post__prose ul, .post__prose ol { padding-left: 22px; margin: 0 0 1em; }
-  .post__prose li { margin: .25em 0; }
-  .post__prose img { border: var(--frame) solid var(--ink); margin: 22px 0; }
+  .post__body > h2 { font-size: 26px; margin: 32px 0 10px; }
+  .post__body > h3 { font-size: 22px; margin: 28px 0 8px; }
+  .post__body > :is(ul, ol) { padding-left: 22px; margin: 0 0 1em; }
+  .post__body > :is(ul, ol) li { margin: .25em 0; }
+  .post__body > img { border: var(--frame) solid var(--ink); margin: 22px 0; }
 
   .post__sidebar {
+    grid-column: aside-start / aside-end;
+    grid-row: 1;
+    align-self: start;
     font-size: 13px;
     line-height: 1.5;
     color: var(--ink-soft);
-    padding-top: 4px;
+    padding: 4px var(--page-pad) 0;
   }
   .post__sidebar dl { margin: 0; }
   .post__sidebar dt {
