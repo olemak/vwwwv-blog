@@ -160,6 +160,88 @@ export const feedPageStyles = /* css */`
   .post__body > .figure--prose-wide { grid-column: prose-start / aside-end; }
   .post__body > .figure--small      { grid-column: aside-start / aside-end; grid-row: span 2; }
 
+  /* Text-marginalia containers (:::aside / :::wide). grid-column only
+     takes effect once the grid is active (>= 1000px); below that they
+     fall back into normal prose flow, which is fine. */
+  .post__body > .block--aside {
+    grid-column: aside-start / aside-end;
+    grid-row: span 2;
+    align-self: start;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+  }
+  .post__body > .block--aside > :first-child { margin-top: 0; }
+  .post__body > .block--aside > :last-child { margin-bottom: 0; }
+  .post__body > .block--aside p { margin: 0 0 .6em; }
+  .post__body > .block--aside blockquote {
+    margin: 0 0 .8em;
+    padding: 2px 0 2px 12px;
+    border-left: 3px solid var(--poster-red);
+    font-family: var(--font-mono);
+    font-style: normal;
+  }
+  .post__body > .block--aside blockquote p:last-child { margin-bottom: 0; }
+  .post__body > .block--aside :is(h2, h3, h4) {
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+    font-size: 13px;
+    margin: 0 0 .5em;
+    color: var(--ink);
+  }
+  .post__body > .block--aside :is(ul, ol) { padding-left: 18px; margin: 0 0 .6em; }
+
+  /* On narrow screens the aside drops into the prose flow and loses the
+     visual separation the margin gave it. Bump the type up and set it
+     apart with a left rule and a little extra breathing room. */
+  @container postbody (width < 1000px) {
+    .post__body > .block--aside {
+      font-size: 15px;
+      line-height: 1.55;
+      margin-block: 1.5em;
+      padding-block: 8px;
+      border-left: 3px solid var(--poster-red);
+    }
+    .post__body > .block--aside :is(h2, h3, h4) { font-size: 14px; }
+  }
+
+  .post__body > .block--wide {
+    grid-column: prose-start / aside-end;
+  }
+  .post__body > .block--wide > :first-child { margin-top: 0; }
+  .post__body > .block--wide > :last-child { margin-bottom: 0; }
+
+  /* Tables anywhere in the post body — prose column or inside a :::wide
+     block. Wide blocks just grant the extra width; the look is shared.
+     Each table is wrapped in .table-scroll (see markdown.ts) so a wide
+     table scrolls sideways on narrow viewports instead of overflowing. */
+  .post__body .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 0 1em;
+  }
+  .post__body table {
+    width: 100%;
+    min-width: 32rem;
+    border-collapse: collapse;
+    font-size: 14px;
+    margin: 0;
+  }
+  .post__body :is(th, td) {
+    border: 1px solid var(--ink);
+    padding: 6px 9px;
+    text-align: left;
+    vertical-align: top;
+  }
+  .post__body th {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    text-transform: uppercase;
+    background: var(--paper-cream-deep);
+  }
+
   @container postbody (width >= 1000px) {
     .post__body {
       display: grid;
@@ -206,7 +288,8 @@ export const feedPageStyles = /* css */`
     background: var(--ink);
     color: var(--paper-cream);
     padding: 16px;
-    overflow-x: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
     font-size: 14px;
     line-height: 1.5;
   }

@@ -12,7 +12,13 @@
 // the lookup map. See extractImageRefs() and the matching D1 batch
 // fetch in @vwwwv/db queries.getImagesByIds.
 
-import { Marked, type RendererThis, type Tokens } from 'marked';
+import {
+  Marked,
+  type RendererThis,
+  type Tokens,
+  type Token,
+  type TokenizerAndRendererExtension,
+} from 'marked';
 import type { Image } from '@vwwwv/db';
 import { renderInlineFigure, type InlineFigureWidth } from './components';
 import { escapeAttr } from './escape';
@@ -82,6 +88,44 @@ function parseWidth(title: string | null | undefined): {
   return { width: 'bleed', caption: title };
 }
 
+/** Block container directives for placement, mirroring the figure width
+ *  classes. `:::aside … :::` routes its content into the narrow aside
+ *  column; `:::wide … :::` into the prose-plus-aside region. The body
+ *  between the fences is parsed as ordinary block markdown, so it can hold
+ *  a quote, a note, a small list, a table — anything. Grid placement for
+ *  the emitted `.block--aside` / `.block--wide` lives in feed-styles.ts. */
+interface ContainerToken extends Tokens.Generic {
+  type: 'container';
+  variant: 'aside' | 'wide';
+  tokens: Token[];
+}
+
+const containerExtension: TokenizerAndRendererExtension = {
+  name: 'container',
+  level: 'block',
+  start(src: string) {
+    return src.match(/^:::(?:aside|wide)\b/m)?.index;
+  },
+  tokenizer(this, src: string) {
+    const m = /^:::(aside|wide)[ \t]*\r?\n([\s\S]*?)\r?\n:::[ \t]*(?:\r?\n|$)/.exec(src);
+    if (!m) return undefined;
+    const token: ContainerToken = {
+      type: 'container',
+      raw: m[0],
+      variant: m[1] as 'aside' | 'wide',
+      tokens: this.lexer.blockTokens(m[2] ?? ''),
+    };
+    return token;
+  },
+  renderer(this, token) {
+    const t = token as ContainerToken;
+    const inner = this.parser.parse(t.tokens);
+    return t.variant === 'aside'
+      ? `<aside class="block--aside">\n${inner}</aside>\n`
+      : `<div class="block--wide">\n${inner}</div>\n`;
+  },
+};
+
 /** Build a per-render Marked instance with the image and paragraph
  *  renderers overridden. The image renderer routes `image:<id>` refs
  *  through the figure component. The paragraph renderer skips the
@@ -92,6 +136,7 @@ function makeRenderer(images: Map<string, Image> | undefined) {
   const marked = new Marked({ gfm: true, breaks: false });
 
   marked.use({
+    extensions: [containerExtension],
     renderer: {
       image(this: RendererThis, token: Tokens.Image): string {
         const { href, title, text } = token;
@@ -157,10 +202,23 @@ function normaliseBody(body: string): string {
     .replace(/\n{3,}/g, '\n\n');   // collapse runs of blank lines
 }
 
+/** Wrap every table in a horizontally-scrollable container. Markdown
+ *  emits a bare <table>; on narrow viewports a multi-column table would
+ *  otherwise overflow the page. The `.table-scroll` wrapper (styled in
+ *  feed-styles.ts) keeps the overflow local to the table. Tables don't
+ *  nest in markdown, so the non-greedy match is safe. */
+function wrapTables(html: string): string {
+  return html.replace(
+    /<table>([\s\S]*?)<\/table>/g,
+    '<div class="table-scroll"><table>$1</table></div>'
+  );
+}
+
 export function renderMarkdown(
   body: string,
   options: RenderMarkdownOptions = {}
 ): string {
   const m = makeRenderer(options.images);
-  return m.parse(normaliseBody(body), { async: false }) as string;
+  const html = m.parse(normaliseBody(body), { async: false }) as string;
+  return wrapTables(html);
 }

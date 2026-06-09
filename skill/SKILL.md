@@ -276,6 +276,48 @@ Below ~1000px the grid collapses to a single column and blocks render
 in source order — the multi-column layout only activates on wider
 screens.
 
+### Text marginalia — `:::aside` and `:::wide`
+
+`{small}` / `{prose-wide}` only move *images* out of the prose column.
+To put **text** — a pull-quote, a note, a small table, a list — into the
+aside column or the prose-wide region, wrap it in a container directive:
+
+```markdown
+:::aside
+> Temperature zero. No randomness. Same prompt, same meltdown.
+
+The canary died on a measuring spoon.
+:::
+
+:::wide
+| Model | Output | Tokens |
+| --- | --- | --- |
+| TinyLlama | scrweardr | 41 |
+| Qwen 2.5 | /Dkuser | 312 |
+:::
+```
+
+- `:::aside … :::` emits `<aside class="block--aside">` → aside column
+  (~220px), 13px soft-ink type, `grid-row: span 2`. Same placement
+  behaviour as a `{small}` figure: it anchors to the paragraph it
+  follows in source order. Use for marginal quotes, side-notes, a tiny
+  reference table.
+- `:::wide … :::` emits `<div class="block--wide">` → prose column plus
+  the aside region (~880px). Use for a table or block too wide for the
+  72ch prose column.
+
+The fence content is parsed as ordinary block markdown — quotes,
+paragraphs, lists, tables, even an `image:` figure all work inside. The
+opening and closing `:::` must each be on their own line. Everything in
+the *Anchoring* and *two-row span* rules below applies to `:::aside`
+exactly as it does to `{small}` figures: don't stack two asides back to
+back, keep ~two prose elements between them. `:::wide`, like a bleed
+figure, resets the row sequence.
+
+Regular paragraphs and headings stay in the prose column — there's no
+need to wrap them. Reach for `:::aside` only when a *specific* fragment
+earns the margin.
+
 **Anchoring an aside.** Sparse auto-placement walks blocks in source
 order and places each into the next available row of its column. To
 anchor an aside next to a specific paragraph, place the aside in
@@ -362,9 +404,10 @@ which aside should anchor to which paragraph.
 
 - `block--text` / `block--prose` — text paragraphs (default placement)
 - `block--aside` — small portraits, tables, marginalia, the metadata
-  block
+  block. For text content, authored as a `:::aside` directive.
 - `block--prose-wide` — figures or blocks that want the prose column
-  plus the aside region (text-column-with-aside-area-claimed)
+  plus the aside region (text-column-with-aside-area-claimed). For text
+  content, authored as a `:::wide` directive.
 - `block--bleed` — figures spanning both columns, matching the hero
   image at the top of the post
 
@@ -391,6 +434,9 @@ After that, paragraphs flow normally. Markdown maps to the design as:
 - `---` — heavy horizontal rule
 - `![alt](url "caption")` — figure with the caption styled as a small red
   label below the framed image
+- `:::aside` / `:::wide` … `:::` — container directives that push the
+  enclosed block markdown into the aside column or the prose-wide region.
+  See *Text marginalia* under *Layout rules for the post body*.
 - Standard `1.` / `-` lists work and are styled normally
 
 ```markdown
