@@ -214,11 +214,118 @@ function wrapTables(html: string): string {
   );
 }
 
+/** Tags that never have a closing partner, so they must not open a
+ *  nesting level in the top-level element walk below. */
+const VOID_TAGS = new Set(['img', 'hr', 'br', 'input', 'meta', 'link', 'source']);
+/** Upper bound on a computed aside span. A long aside-free stretch would
+ *  otherwise hand the last aside an enormous, pointless span (and a
+ *  giant empty box if asides ever gain a background). */
+const ASIDE_SPAN_CAP = 6;
+
+/** Give each aside-column block a row-span that fills the column down to
+ *  the next thing occupying that column — another aside, a {small}
+ *  figure, or a :::wide / bleed block — instead of a fixed two rows. This
+ *  fills the margin and stops a tall aside from stretching the prose
+ *  beside it. We model the grid's row assignment from the block sequence
+ *  (source order = vertical order; asides sit on the row of the content
+ *  they follow) and inject a `block--aside--span-N` class. Computed from
+ *  body blocks only: the metadata sidebar is pinned to aside row 1, above
+ *  every body aside, so it doesn't affect these counts. */
+function applyAsideSpans(html: string): string {
+  interface TopEl { name: string; cls: string; start: number; openLen: number }
+
+  // 1. Depth-aware walk to find top-level elements and their offsets.
+  const tops: TopEl[] = [];
+  const tagRe = /<(\/?)([a-z0-9]+)([^>]*?)(\/?)>/gi;
+  let depth = 0;
+  let cur: TopEl | null = null;
+  let m: RegExpExecArray | null;
+  while ((m = tagRe.exec(html)) !== null) {
+    const isClose = m[1] === '/';
+    const name = (m[2] ?? '').toLowerCase();
+    const attrs = m[3] ?? '';
+    const isVoid = VOID_TAGS.has(name) || m[4] === '/';
+    if (!isClose) {
+      if (depth === 0) {
+        const clsMatch = /class="([^"]*)"/.exec(attrs);
+        cur = { name, cls: clsMatch?.[1] ?? '', start: m.index, openLen: m[0].length };
+      }
+      if (!isVoid) depth++;
+      else if (depth === 0 && cur) { tops.push(cur); cur = null; }
+    } else {
+      depth--;
+      if (depth === 0 && cur) { tops.push(cur); cur = null; }
+    }
+  }
+  if (!tops.some((t) => t.name === 'aside' && t.cls.includes('block--aside'))) {
+    return html;
+  }
+
+  // 2. Classify. {small} images are asides; :::wide / prose-wide / bleed
+  //    are both-column boundaries; everything else is prose-column content.
+  type Kind = 'PROSE' | 'ASIDE' | 'WIDE';
+  const kindOf = (t: TopEl): Kind => {
+    if (t.name === 'aside' && t.cls.includes('block--aside')) return 'ASIDE';
+    if (t.cls.includes('figure--small')) return 'ASIDE';
+    if (t.cls.includes('block--wide') || t.cls.includes('figure--prose-wide')) return 'WIDE';
+    return 'PROSE';
+  };
+  const proseRows = (t: TopEl): number =>
+    t.cls.includes('figure--prose') && !t.cls.includes('figure--prose-wide') ? 2 : 1;
+
+  // 3. Simulate rows. Content advances the prose cursor; an aside anchors
+  //    to the last content row without advancing it.
+  interface Sim { el: TopEl; kind: Kind; row: number; anchor: number; span: number }
+  let row = 0;
+  let lastContent = 0;
+  const sims: Sim[] = tops.map((el) => {
+    const kind = kindOf(el);
+    if (kind === 'ASIDE') return { el, kind, row: 0, anchor: lastContent, span: 2 };
+    row += kind === 'WIDE' ? 1 : proseRows(el);
+    lastContent = row;
+    return { el, kind, row, anchor: 0, span: 0 };
+  });
+  const finalRow = row;
+
+  // 4. Span = rows from the aside down to the next aside-column occupant.
+  const boundaryRow = (s: Sim): number => (s.kind === 'ASIDE' ? s.anchor : s.row);
+  for (let i = 0; i < sims.length; i++) {
+    const s = sims[i];
+    if (!s || s.kind !== 'ASIDE') continue;
+    let next: Sim | undefined;
+    for (let j = i + 1; j < sims.length; j++) {
+      const c = sims[j];
+      if (c && (c.kind === 'ASIDE' || c.kind === 'WIDE')) { next = c; break; }
+    }
+    const reach = (next ? boundaryRow(next) : finalRow + 1) - s.anchor;
+    // Floor of 1: if the editor has deliberately placed the next aside
+    // just one content block down, there is room for exactly one row, and
+    // forcing 2 would overrun the next aside's anchor.
+    s.span = Math.max(1, Math.min(reach, ASIDE_SPAN_CAP));
+  }
+
+  // 5. Inject the computed span class on every text aside (1–6). The CSS
+  //    carries no default span, so each aside must declare its own. Apply
+  //    right-to-left so earlier offsets stay valid.
+  const edits = sims
+    .filter((s) => s.kind === 'ASIDE' && s.el.name === 'aside' && s.span >= 1)
+    .sort((a, b) => b.el.start - a.el.start);
+  let out = html;
+  for (const s of edits) {
+    const tag = out.slice(s.el.start, s.el.start + s.el.openLen);
+    out =
+      out.slice(0, s.el.start) +
+      tag.replace('class="block--aside"', `class="block--aside block--aside--span-${s.span}"`) +
+      out.slice(s.el.start + s.el.openLen);
+  }
+  return out;
+}
+
 export function renderMarkdown(
   body: string,
   options: RenderMarkdownOptions = {}
 ): string {
   const m = makeRenderer(options.images);
   const html = m.parse(normaliseBody(body), { async: false }) as string;
-  return wrapTables(html);
+  return applyAsideSpans(wrapTables(html));
 }

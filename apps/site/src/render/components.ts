@@ -137,6 +137,11 @@ export interface PostCardOptions {
   proseHtml: string;
 }
 
+/** Single-author blog: the byline links here. Lift into the authors
+ *  table (a `bluesky` / `links` column) if the site ever goes
+ *  multi-author, and thread it through getPostBySlug. */
+const AUTHOR_BLUESKY = 'https://bsky.app/profile/olemak.bsky.social';
+
 export function postCard(
   post: PostWithRelations,
   opts: PostCardOptions
@@ -196,6 +201,8 @@ export function postCard(
   const sidebar = `
     <aside class="post__sidebar">
       <dl>
+        <dt>Words</dt>
+        <dd><a href="${AUTHOR_BLUESKY}" rel="me">${e(post.author.name)}</a></dd>
         <dt>Filed</dt>
         <dd>${e(post.tags.join(', ') || '—')}</dd>
         <dt>Published</dt>
