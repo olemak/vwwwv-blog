@@ -165,6 +165,7 @@ export const feedPageStyles = /* css */`
      fall back into normal prose flow, which is fine. */
   .post__body > .block--aside {
     grid-column: aside-start / aside-end;
+    grid-row: span var(--aside-span, 1);
     align-self: start;
     font-size: 13px;
     line-height: 1.5;
@@ -192,16 +193,10 @@ export const feedPageStyles = /* css */`
   }
   .post__body > .block--aside :is(ul, ol) { padding-left: 18px; margin: 0 0 .6em; }
 
-  /* Dynamic aside span: each aside fills the rows down to the next
-     aside-column occupant (computed at render time, see applyAsideSpans
-     in markdown.ts). Every aside carries one of these (no default span
-     on .block--aside itself). Floor 1, capped at 6. Inert below 1000px. */
-  .post__body > .block--aside--span-1 { grid-row: span 1; }
-  .post__body > .block--aside--span-2 { grid-row: span 2; }
-  .post__body > .block--aside--span-3 { grid-row: span 3; }
-  .post__body > .block--aside--span-4 { grid-row: span 4; }
-  .post__body > .block--aside--span-5 { grid-row: span 5; }
-  .post__body > .block--aside--span-6 { grid-row: span 6; }
+  /* The aside row-span is carried by the --aside-span custom property,
+     set per element at render time (see applyAsideSpans in markdown.ts).
+     Uncapped; defaults to 1 when absent. grid-row is inert below 1000px
+     where the grid is off. */
 
   /* On narrow screens the aside drops into the prose flow and loses the
      visual separation the margin gave it. Bump the type up and set it

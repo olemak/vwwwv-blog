@@ -217,10 +217,6 @@ function wrapTables(html: string): string {
 /** Tags that never have a closing partner, so they must not open a
  *  nesting level in the top-level element walk below. */
 const VOID_TAGS = new Set(['img', 'hr', 'br', 'input', 'meta', 'link', 'source']);
-/** Upper bound on a computed aside span. A long aside-free stretch would
- *  otherwise hand the last aside an enormous, pointless span (and a
- *  giant empty box if asides ever gain a background). */
-const ASIDE_SPAN_CAP = 6;
 
 /** Give each aside-column block a row-span that fills the column down to
  *  the next thing occupying that column — another aside, a {small}
@@ -297,25 +293,27 @@ function applyAsideSpans(html: string): string {
       const c = sims[j];
       if (c && (c.kind === 'ASIDE' || c.kind === 'WIDE')) { next = c; break; }
     }
-    const reach = (next ? boundaryRow(next) : finalRow + 1) - s.anchor;
     // Floor of 1: if the editor has deliberately placed the next aside
     // just one content block down, there is room for exactly one row, and
-    // forcing 2 would overrun the next aside's anchor.
-    s.span = Math.max(1, Math.min(reach, ASIDE_SPAN_CAP));
+    // forcing 2 would overrun the next aside's anchor. No upper cap: a
+    // tall aside with short content is just empty margin (no background).
+    const reach = (next ? boundaryRow(next) : finalRow + 1) - s.anchor;
+    s.span = Math.max(1, reach);
   }
 
-  // 5. Inject the computed span class on every text aside (1–6). The CSS
-  //    carries no default span, so each aside must declare its own. Apply
-  //    right-to-left so earlier offsets stay valid.
+  // 5. Carry the computed span as a --aside-span custom property on every
+  //    text aside that needs more than one row (span 1 is the CSS default,
+  //    so it needs no attribute). Apply right-to-left so earlier offsets
+  //    stay valid.
   const edits = sims
-    .filter((s) => s.kind === 'ASIDE' && s.el.name === 'aside' && s.span >= 1)
+    .filter((s) => s.kind === 'ASIDE' && s.el.name === 'aside' && s.span >= 2)
     .sort((a, b) => b.el.start - a.el.start);
   let out = html;
   for (const s of edits) {
     const tag = out.slice(s.el.start, s.el.start + s.el.openLen);
     out =
       out.slice(0, s.el.start) +
-      tag.replace('class="block--aside"', `class="block--aside block--aside--span-${s.span}"`) +
+      tag.replace('class="block--aside"', `class="block--aside" style="--aside-span: ${s.span}"`) +
       out.slice(s.el.start + s.el.openLen);
   }
   return out;
