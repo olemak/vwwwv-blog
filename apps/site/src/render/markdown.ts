@@ -126,6 +126,37 @@ const containerExtension: TokenizerAndRendererExtension = {
   },
 };
 
+/** eleg.io component embed: a single line `:::component <org>:<id>`.
+ *  Emits a standard ESI include that the Worker resolves on the finished
+ *  page (see esi.ts), so the renderer stays synchronous. Only well-formed
+ *  ids are accepted; anything else stays as plain text. */
+export const ELEG_COMPONENT_BASE = 'https://edge.eleg.io/c/';
+const COMPONENT_ID = /^[a-z0-9-]+:[A-Za-z0-9_-]+$/;
+
+interface ComponentToken extends Tokens.Generic {
+  type: 'elegComponent';
+  id: string;
+}
+
+const componentExtension: TokenizerAndRendererExtension = {
+  name: 'elegComponent',
+  level: 'block',
+  start(src: string) {
+    return src.match(/^:::component[ \t]/m)?.index;
+  },
+  tokenizer(src: string) {
+    const m = /^:::component[ \t]+(\S+)[ \t]*(?:\r?\n|$)/.exec(src);
+    const id = m?.[1];
+    if (!m || !id || !COMPONENT_ID.test(id)) return undefined;
+    const token: ComponentToken = { type: 'elegComponent', raw: m[0], id };
+    return token;
+  },
+  renderer(token) {
+    const t = token as ComponentToken;
+    return `<div class="block--component"><esi:include src="${ELEG_COMPONENT_BASE}${t.id}" /></div>\n`;
+  },
+};
+
 /** Build a per-render Marked instance with the image and paragraph
  *  renderers overridden. The image renderer routes `image:<id>` refs
  *  through the figure component. The paragraph renderer skips the
@@ -136,7 +167,7 @@ function makeRenderer(images: Map<string, Image> | undefined) {
   const marked = new Marked({ gfm: true, breaks: false });
 
   marked.use({
-    extensions: [containerExtension],
+    extensions: [componentExtension, containerExtension],
     renderer: {
       image(this: RendererThis, token: Tokens.Image): string {
         const { href, title, text } = token;

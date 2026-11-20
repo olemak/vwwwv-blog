@@ -13,6 +13,7 @@ import { renderTagCloud } from './render/tag-cloud';
 import { renderPost } from './render/post';
 import { extractImageRefs } from './render/markdown';
 import { handleApi } from './publish/handlers';
+import { processEsi } from './esi';
 
 /** Walk every post body, collect image references, batch-resolve through
  *  D1. Used by the feed and post-page handlers so the markdown renderer
@@ -100,7 +101,7 @@ async function handleFeedHome(request: Request, env: Env): Promise<Response> {
     wordmarkVariant: flags.wordmarkVariant,
     bodyImages,
   });
-  return new Response(html, { headers: HTML_HEADERS });
+  return new Response(await processEsi(html), { headers: HTML_HEADERS });
 }
 
 async function handleAboutPage(request: Request, env: Env): Promise<Response> {
@@ -112,7 +113,7 @@ async function handleAboutPage(request: Request, env: Env): Promise<Response> {
     });
   }
   const html = renderAbout({ author, wordmarkVariant: flags.wordmarkVariant });
-  return new Response(html, { headers: HTML_HEADERS });
+  return new Response(await processEsi(html), { headers: HTML_HEADERS });
 }
 
 async function handleTagCloudPage(request: Request, env: Env): Promise<Response> {
@@ -136,7 +137,7 @@ async function handleTagCloudPage(request: Request, env: Env): Promise<Response>
     wordmarkVariant: flags.wordmarkVariant,
     totalPosts,
   });
-  return new Response(html, { headers: HTML_HEADERS });
+  return new Response(await processEsi(html), { headers: HTML_HEADERS });
 }
 
 async function handleTagFilter(
@@ -154,7 +155,7 @@ async function handleTagFilter(
     tagFilter: tagName,
     bodyImages,
   });
-  return new Response(html, { headers: HTML_HEADERS });
+  return new Response(await processEsi(html), { headers: HTML_HEADERS });
 }
 
 async function handlePostPage(
@@ -173,7 +174,7 @@ async function handlePostPage(
     siteUrl: env.SITE_URL,
     bodyImages,
   });
-  return new Response(html, { headers: HTML_HEADERS });
+  return new Response(await processEsi(html), { headers: HTML_HEADERS });
 }
 
 async function handleImage(env: Env, key: string): Promise<Response> {
