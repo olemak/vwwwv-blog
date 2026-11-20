@@ -416,6 +416,33 @@ always an `aside` block, server-rendered as the last child of the post
 body. On wide screens it pops to the top-right of the grid via explicit
 `grid-row: 1`.
 
+### Interactive components — `:::component`
+
+Published eleg.io components embed with a single line, on its own, with
+no closing fence:
+
+```markdown
+:::component vwwwv:comp_mwpl59hk_r37287k5
+```
+
+The renderer emits `<div class="block--component">` holding an
+`<esi:include>` for `https://edge.eleg.io/c/<id>`; the Worker resolves
+it server-side (`apps/site/src/esi.ts`) before responding, so the
+component arrives server-rendered in its own shadow DOM and sits in the
+prose column. Ids must look like `<org>:<id>`; anything else is left as
+plain text. If the edge is unreachable the block renders empty.
+
+Known components:
+
+- `vwwwv:comp_mwpl59hk_r37287k5` — "Checking your privileges", the
+  browser permission self-check. Its labels link to `#about-<id>`
+  sections and "how" to `#where`, so a post using it should have
+  elements with those ids (`about-geolocation`, `about-camera`,
+  `about-microphone`, `about-clipboard`, `about-loopback`,
+  `about-localnet`, `about-notifications`, `about-webrtc`, `where`).
+  The renderer doesn't generate heading ids, so write those headings as
+  raw HTML, e.g. `<h2 id="where">Where did it come from?</h2>`.
+
 ## Body shape that fits the design
 
 The site renders the first paragraph of a post with a drop-cap. Make the
