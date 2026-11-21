@@ -422,7 +422,7 @@ Published eleg.io components embed with a single line, on its own, with
 no closing fence:
 
 ```markdown
-:::component vwwwv:comp_mwpl59hk_r37287k5
+:::component vwwwv:comp_mwpnqt6s_fgs02ed4
 ```
 
 The renderer emits `<div class="block--component">` holding an
@@ -434,7 +434,7 @@ plain text. If the edge is unreachable the block renders empty.
 
 Known components:
 
-- `vwwwv:comp_mwpl59hk_r37287k5` — "Checking your privileges", the
+- `vwwwv:comp_mwpnqt6s_fgs02ed4` — "Checking your privileges", the
   browser permission self-check. Its labels link to `#about-<id>`
   sections and "how" to `#where`, so a post using it should have
   elements with those ids (`about-geolocation`, `about-camera`,
